@@ -1,10 +1,10 @@
-"I:\GitHub\xbb15132\Lab_2\LEDDriver.c"
+"I:\IAR\EE312\Lab_2\LEDDriver.c"
 -std=c99
 -ferror-limit=100
 -I
-I:\GitHub\xbb15132\Lab_2\..
+I:\IAR\EE312\Lab_2\..
 -I
-I:\GitHub\xbb15132\Lab_2\..\driverlib\MSP430FR2xx_4xx
+I:\IAR\EE312\Lab_2\..\driverlib\MSP430FR2xx_4xx
 -I
 E:\IAR-new\430\inc\dlib
 -I
@@ -12,9 +12,9 @@ E:\IAR-new\430\inc
 -I
 E:\IAR-new\430\inc\dlib\c
 -I
-I:\GitHub\xbb15132
+I:\IAR\EE312
 -I
-I:\GitHub\xbb15132\driverlib\MSP430FR2xx_4xx
+I:\IAR\EE312\driverlib\MSP430FR2xx_4xx
 -D__MSP430FR4133__=1
 -D__CHAR_BITS__=8
 -D__CHAR_MAX__=0xff

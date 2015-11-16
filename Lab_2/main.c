@@ -22,21 +22,44 @@ int main(void)
   // Disable the GPIO power-on default high-impedance mode
   // to activate previously configured port settings
   PMM_unlockLPM5();
-
+  
+  unsigned int S,j,k=1;
+  //S=1;
   while(1)
   {
-    
-      dialValue = dialValue * 0x02;
+    S=GPIO_getInputPinValue(GPIO_PORT_P1,GPIO_PIN3);
+    if(S==0)
+      k=-k;
+      //dialValue = dialValue * 0x02;
       
-      if(0x00 == dialValue)
-         dialValue = 0x01;
+      //if(0x00 == dialValue)
+        // dialValue = 0x01;
     
     //Set value
-    setLedDial(dialValue);
-    
-    //Refresh display (10 times for each position)
-    for(i = 0; i < 10; i++)
-      refreshLedDial();
-
+      if(k==1)
+      {  
+        for(j=0;j<8;j++)
+        {
+          setLedDial(dialValue);
+          dialValue=dialValue<<1;
+        //Refresh display (10 times for each position)
+        for(i = 0; i < 10; i++)
+          refreshLedDial();
+        }
+        dialValue = 0x01;
+      }
+      else
+      {
+        dialValue=0x80;
+        for(j=0;j<8;j++)
+        {
+          setLedDial(dialValue);
+          dialValue=dialValue>>1;
+        //Refresh display (10 times for each position)
+        for(i = 0; i < 10; i++)
+          refreshLedDial();
+       }
+       dialValue = 0x01;
+      }
   }
 }

@@ -37,30 +37,60 @@ void refreshLedDial()
 {
   //Refresh lower bank (LEDs 1-4)
  //Inserted by student
- P2OUT&=0x7f;   
-  P8OUT|=0x01;
-  P5OUT&=0xf1;  //light LED1
-  __delay_cycles(100000);  //Delay 10ms
-  P8OUT&=0xfe;
-  P5OUT|=0x02;  //light LED2
-  __delay_cycles(100000);
-  P5OUT|=0x04;  //light LED3
-  __delay_cycles(100000);
-  P5OUT|=0x08;  //light LED4
-  __delay_cycles(100000);  //Delay 10ms
+ if(ledValue_==0x01)
+ { 
+   P2OUT&=0x7f;   
+   P8OUT|=0x01;
+   P5OUT&=0xf1;
+ }  //light LED1
+ if(ledValue_==0x02) 
+ { 
+   P2OUT&=0x7f;
+   P8OUT&=0xfe;
+   P5OUT|=0x02;
+ }  //light LED2
+ if(ledValue_==0x04)
+ {
+   P2OUT&=0x7f;
+   P8OUT&=0xfe;
+   P5OUT|=0x04;
+ }  //light LED3
+ if(ledValue_==0x08)
+ {  
+   P2OUT&=0x7f;
+   P8OUT&=0xfe;
+   P5OUT|=0x08;
+ }  //light LED4
   //Refresh lower bank (LEDs 5-9)
   //Inserted by student
-P2OUT|=0x80;
-  P8OUT&=0xfe;
-  P5OUT|=0x0e;  //light LED5
+ if(ledValue_==0x10)
+ {
+   P2OUT|=0x80;
+   P8OUT&=0xfe;
+   P5OUT|=0x0e;
+ }  //light LED5
+ if(ledValue_==0x20)
+ {
+   P2OUT|=0x80;
+   P8OUT|=0x01;
+   P5OUT=0x06; 
+ } //light LED6
+ if(ledValue_==0x40)
+ {
+   P2OUT|=0x80;
+   P8OUT|=0x01;
+   P5OUT=0x0a;
+ }  //light LED7
+ if(ledValue_==0x80)
+ {
+   P2OUT|=0x80;
+   P8OUT|=0x01;
+   P5OUT=0x0c; 
+ } //light LED8
   __delay_cycles(100000);  //Delay 10ms
-  P8OUT|=0x01;
-  P5OUT&=0xfd;  //light LED6
-  __delay_cycles(100000);
-  P5OUT&=0xfb;  //light LED7
-  __delay_cycles(100000);
-  P5OUT&=0xf7;  //light LED8
-  __delay_cycles(100000);  //Delay 10ms
+ P2OUT&=0x7f;
+ P8OUT&=0xfe;
+ P5OUT&=0xf1;  //turn off all LEDS
 }
 
 /** 

@@ -25,7 +25,7 @@ if not "%1" == "" goto debugFile
 
 @echo on 
 
-"E:\IAR-new\common\bin\cspybat" -f "I:\GitHub\xbb15132\Lab_2\settings\Lab2.Debug.general.xcl" --backend -f "I:\GitHub\xbb15132\Lab_2\settings\Lab2.Debug.driver.xcl" 
+"E:\IAR-new\common\bin\cspybat" -f "I:\IAR\EE312\Lab_2\settings\Lab2.Debug.general.xcl" --backend -f "I:\IAR\EE312\Lab_2\settings\Lab2.Debug.driver.xcl" 
 
 @echo off 
 goto end 
@@ -34,7 +34,7 @@ goto end
 
 @echo on 
 
-"E:\IAR-new\common\bin\cspybat" -f "I:\GitHub\xbb15132\Lab_2\settings\Lab2.Debug.general.xcl" "--debug_file=%1" --backend -f "I:\GitHub\xbb15132\Lab_2\settings\Lab2.Debug.driver.xcl" 
+"E:\IAR-new\common\bin\cspybat" -f "I:\IAR\EE312\Lab_2\settings\Lab2.Debug.general.xcl" "--debug_file=%1" --backend -f "I:\IAR\EE312\Lab_2\settings\Lab2.Debug.driver.xcl" 
 
 @echo off 
 :end

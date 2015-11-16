@@ -1,6 +1,6 @@
 ###############################################################################
 #
-# IAR C/C++ Compiler V6.30.2.940/W32 for MSP430           11/Nov/2015  15:28:28
+# IAR C/C++ Compiler V6.30.2.940/W32 for MSP430           16/Nov/2015  22:03:06
 # Copyright 1996-2015 IAR Systems AB.
 # Standalone license - IAR Embedded Workbench for Texas Instruments MSP430
 #
@@ -12,23 +12,22 @@
 #    __core        =  430X
 #    __data_model  =  small
 #    __code_model  =  large
-#    Source file   =  I:\GitHub\xbb15132\Lab_2\LEDDriver.c
+#    Source file   =  I:\IAR\EE312\Lab_2\LEDDriver.c
 #    Command line  =  
-#        I:\GitHub\xbb15132\Lab_2\LEDDriver.c -lcN
-#        I:\GitHub\xbb15132\Lab_2\Debug\List\ -o
-#        I:\GitHub\xbb15132\Lab_2\Debug\Obj\ --no_cse --no_unroll --no_inline
+#        I:\IAR\EE312\Lab_2\LEDDriver.c -lcN I:\IAR\EE312\Lab_2\Debug\List\ -o
+#        I:\IAR\EE312\Lab_2\Debug\Obj\ --no_cse --no_unroll --no_inline
 #        --no_code_motion --no_tbaa --debug -D__MSP430FR4133__ -e --double=32
 #        --dlib_config E:\IAR-new\430\lib\dlib\dl430xlsfn.h -I
-#        I:\GitHub\xbb15132\Lab_2\..\ -I
-#        I:\GitHub\xbb15132\Lab_2\..\driverlib\MSP430FR2xx_4xx\ --core=430X
+#        I:\IAR\EE312\Lab_2\..\ -I
+#        I:\IAR\EE312\Lab_2\..\driverlib\MSP430FR2xx_4xx\ --core=430X
 #        --data_model=small -Ol --hw_workaround=CPU40 --segment __data16=DATA16
 #        --segment __data20=DATA20 --code_model=large
-#    List file     =  I:\GitHub\xbb15132\Lab_2\Debug\List\LEDDriver.lst
-#    Object file   =  I:\GitHub\xbb15132\Lab_2\Debug\Obj\LEDDriver.r43
+#    List file     =  I:\IAR\EE312\Lab_2\Debug\List\LEDDriver.lst
+#    Object file   =  I:\IAR\EE312\Lab_2\Debug\Obj\LEDDriver.r43
 #
 ###############################################################################
 
-I:\GitHub\xbb15132\Lab_2\LEDDriver.c
+I:\IAR\EE312\Lab_2\LEDDriver.c
       1          /**************************************************
       2           * LEDDriver.c
       3           * Drives LED display
@@ -68,25 +67,69 @@ I:\GitHub\xbb15132\Lab_2\LEDDriver.c
      37          {
      38            //Refresh lower bank (LEDs 1-4)
      39           //Inserted by student
-     40            P2OUT&=0x7f;
-     41            P8OUT|=0x01;
-     42            P5OUT|=0x0e;
-     43            __delay_cycles(100000);  //Delay 10ms
-     44            //Refresh lower bank (LEDs 5-9)
-     45            //Inserted by student
-     46            P2OUT|=0x80;
-     47            P8OUT&=0xfe;
-     48            P5OUT&=0xf1;
-     49            __delay_cycles(100000);  //Delay 10ms
-     50          }
-     51          
-     52          /** 
-     53          Set dial value
-     54          */
-     55          void setLedDial(unsigned char value)
-     56          {
-     57            ledValue_ = value;
-     58          }
+     40           if(ledValue_==0x01)
+     41           { 
+     42             P2OUT&=0x7f;   
+     43             P8OUT|=0x01;
+     44             P5OUT&=0xf1;
+     45           }  //light LED1
+     46           if(ledValue_==0x02) 
+     47           { 
+     48             P2OUT&=0x7f;
+     49             P8OUT&=0xfe;
+     50             P5OUT|=0x02;
+     51           }  //light LED2
+     52           if(ledValue_==0x04)
+     53           {
+     54             P2OUT&=0x7f;
+     55             P8OUT&=0xfe;
+     56             P5OUT|=0x04;
+     57           }  //light LED3
+     58           if(ledValue_==0x08)
+     59           {  
+     60             P2OUT&=0x7f;
+     61             P8OUT&=0xfe;
+     62             P5OUT|=0x08;
+     63           }  //light LED4
+     64            //Refresh lower bank (LEDs 5-9)
+     65            //Inserted by student
+     66           if(ledValue_==0x10)
+     67           {
+     68             P2OUT|=0x80;
+     69             P8OUT&=0xfe;
+     70             P5OUT|=0x0e;
+     71           }  //light LED5
+     72           if(ledValue_==0x20)
+     73           {
+     74             P2OUT|=0x80;
+     75             P8OUT|=0x01;
+     76             P5OUT=0x06; 
+     77           } //light LED6
+     78           if(ledValue_==0x40)
+     79           {
+     80             P2OUT|=0x80;
+     81             P8OUT|=0x01;
+     82             P5OUT=0x0a;
+     83           }  //light LED7
+     84           if(ledValue_==0x80)
+     85           {
+     86             P2OUT|=0x80;
+     87             P8OUT|=0x01;
+     88             P5OUT=0x0c; 
+     89           } //light LED8
+     90            __delay_cycles(100000);  //Delay 10ms
+     91           P2OUT&=0x7f;
+     92           P8OUT&=0xfe;
+     93           P5OUT&=0xf1;  //turn off all LEDS
+     94          }
+     95          
+     96          /** 
+     97          Set dial value
+     98          */
+     99          void setLedDial(unsigned char value)
+    100          {
+    101            ledValue_ = value;
+    102          }
 
    Maximum stack usage in bytes:
 
@@ -108,15 +151,15 @@ I:\GitHub\xbb15132\Lab_2\LEDDriver.c
        2  _A_PDOUT_L
       48  initialiseLedDial
        1  ledValue_
-      54  refreshLedDial
+     206  refreshLedDial
        6  setLedDial
 
  
- 108 bytes in segment CODE
+ 260 bytes in segment CODE
    6 bytes in segment DATA16_AN
    1 byte  in segment DATA16_Z
  
- 108 bytes of CODE memory
+ 260 bytes of CODE memory
    1 byte  of DATA memory (+ 6 bytes shared)
 
 Errors: none
