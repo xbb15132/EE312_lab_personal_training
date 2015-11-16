@@ -1,0 +1,307 @@
+###############################################################################
+#
+# IAR C/C++ Compiler V6.30.2.940/W32 for MSP430           07/Nov/2015  19:53:04
+# Copyright 1996-2015 IAR Systems AB.
+# Standalone license - IAR Embedded Workbench for Texas Instruments MSP430
+#
+#    __rt_version  =  3
+#    __double_size =  32
+#    __reg_r4      =  free
+#    __reg_r5      =  free
+#    __pic         =  no
+#    __core        =  430X
+#    __data_model  =  small
+#    __code_model  =  large
+#    Source file   =  
+#        I:\GitHub\xbb15132\driverlib\MSP430FR2xx_4xx\eusci_a_spi.c
+#    Command line  =  
+#        I:\GitHub\xbb15132\driverlib\MSP430FR2xx_4xx\eusci_a_spi.c -lcN
+#        I:\GitHub\xbb15132\Lab_2\Debug\List\ -o
+#        I:\GitHub\xbb15132\Lab_2\Debug\Obj\ --no_cse --no_unroll --no_inline
+#        --no_code_motion --no_tbaa --debug -D__MSP430FR4133__ -e --double=32
+#        --dlib_config E:\IAR-new\430\lib\dlib\dl430xlsfn.h -I
+#        I:\GitHub\xbb15132\Lab_2\..\ -I
+#        I:\GitHub\xbb15132\Lab_2\..\driverlib\MSP430FR2xx_4xx\ --core=430X
+#        --data_model=small -Ol --hw_workaround=CPU40 --segment __data16=DATA16
+#        --segment __data20=DATA20 --code_model=large
+#    List file     =  I:\GitHub\xbb15132\Lab_2\Debug\List\eusci_a_spi.lst
+#    Object file   =  I:\GitHub\xbb15132\Lab_2\Debug\Obj\eusci_a_spi.r43
+#
+###############################################################################
+
+I:\GitHub\xbb15132\driverlib\MSP430FR2xx_4xx\eusci_a_spi.c
+      1          /* --COPYRIGHT--,BSD
+      2           * Copyright (c) 2014, Texas Instruments Incorporated
+      3           * All rights reserved.
+      4           *
+      5           * Redistribution and use in source and binary forms, with or without
+      6           * modification, are permitted provided that the following conditions
+      7           * are met:
+      8           *
+      9           * *  Redistributions of source code must retain the above copyright
+     10           *    notice, this list of conditions and the following disclaimer.
+     11           *
+     12           * *  Redistributions in binary form must reproduce the above copyright
+     13           *    notice, this list of conditions and the following disclaimer in the
+     14           *    documentation and/or other materials provided with the distribution.
+     15           *
+     16           * *  Neither the name of Texas Instruments Incorporated nor the names of
+     17           *    its contributors may be used to endorse or promote products derived
+     18           *    from this software without specific prior written permission.
+     19           *
+     20           * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+     21           * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+     22           * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+     23           * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+     24           * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+     25           * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+     26           * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+     27           * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+     28           * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+     29           * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+     30           * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+     31           * --/COPYRIGHT--*/
+     32          //*****************************************************************************
+     33          //
+     34          // eusci_a_spi.c - Driver for the eusci_a_spi Module.
+     35          //
+     36          //*****************************************************************************
+     37          
+     38          //*****************************************************************************
+     39          //
+     40          //! \addtogroup eusci_a_spi_api eusci_a_spi
+     41          //! @{
+     42          //
+     43          //*****************************************************************************
+     44          
+     45          #include "inc/hw_regaccess.h"
+     46          #include "inc/hw_memmap.h"
+     47          
+     48          #ifdef __MSP430_HAS_EUSCI_Ax__
+     49          #include "eusci_a_spi.h"
+     50          
+     51          #include <assert.h>
+     52          
+     53          void EUSCI_A_SPI_initMaster(uint16_t baseAddress,
+     54                                      EUSCI_A_SPI_initMasterParam *param)
+     55          {
+     56              //Disable the USCI Module
+     57              HWREG16(baseAddress + OFS_UCAxCTLW0) |= UCSWRST;
+     58          
+     59              //Reset OFS_UCAxCTLW0 values
+     60              HWREG16(baseAddress + OFS_UCAxCTLW0) &= ~(UCCKPH + UCCKPL + UC7BIT + UCMSB +
+     61                                                        UCMST + UCMODE_3 + UCSYNC);
+     62          
+     63              //Reset OFS_UCAxCTLW0 values
+     64              HWREG16(baseAddress + OFS_UCAxCTLW0) &= ~(UCSSEL_3);
+     65          
+     66              //Select Clock
+     67              HWREG16(baseAddress + OFS_UCAxCTLW0) |= param->selectClockSource;
+     68          
+     69              HWREG16(baseAddress + OFS_UCAxBRW) =
+     70                  (uint16_t)(param->clockSourceFrequency / param->desiredSpiClock);
+     71          
+     72              /*
+     73               * Configure as SPI master mode.
+     74               * Clock phase select, polarity, msb
+     75               * UCMST = Master mode
+     76               * UCSYNC = Synchronous mode
+     77               * UCMODE_0 = 3-pin SPI
+     78               */
+     79              HWREG16(baseAddress + OFS_UCAxCTLW0) |= (
+     80                  param->msbFirst +
+     81                  param->clockPhase +
+     82                  param->clockPolarity +
+     83                  UCMST +
+     84                  UCSYNC +
+     85                  param->spiMode
+     86                  );
+     87              //No modulation
+     88              HWREG16(baseAddress + OFS_UCAxMCTLW) = 0;
+     89          }
+     90          
+     91          void EUSCI_A_SPI_select4PinFunctionality(uint16_t baseAddress,
+     92                                                   uint8_t select4PinFunctionality)
+     93          {
+     94              HWREG16(baseAddress + OFS_UCAxCTLW0) &= ~UCSTEM;
+     95              HWREG16(baseAddress + OFS_UCAxCTLW0) |= select4PinFunctionality;
+     96          }
+     97          
+     98          void EUSCI_A_SPI_changeMasterClock(uint16_t baseAddress,
+     99                                             EUSCI_A_SPI_changeMasterClockParam *param)
+    100          {
+    101              //Disable the USCI Module
+    102              HWREG16(baseAddress + OFS_UCAxCTLW0) |= UCSWRST;
+    103          
+    104              HWREG16(baseAddress + OFS_UCAxBRW) =
+    105                  (uint16_t)(param->clockSourceFrequency / param->desiredSpiClock);
+    106          
+    107              //Reset the UCSWRST bit to enable the USCI Module
+    108              HWREG16(baseAddress + OFS_UCAxCTLW0) &= ~(UCSWRST);
+    109          }
+    110          
+    111          void EUSCI_A_SPI_initSlave(uint16_t baseAddress,
+    112                                     EUSCI_A_SPI_initSlaveParam *param)
+    113          {
+    114              //Disable USCI Module
+    115              HWREG16(baseAddress + OFS_UCAxCTLW0) |= UCSWRST;
+    116          
+    117              //Reset OFS_UCAxCTLW0 register
+    118              HWREG16(baseAddress + OFS_UCAxCTLW0) &= ~(UCMSB +
+    119                                                        UC7BIT +
+    120                                                        UCMST +
+    121                                                        UCCKPL +
+    122                                                        UCCKPH +
+    123                                                        UCMODE_3
+    124                                                        );
+    125          
+    126              //Clock polarity, phase select, msbFirst, SYNC, Mode0
+    127              HWREG16(baseAddress + OFS_UCAxCTLW0) |= (param->clockPhase +
+    128                                                       param->clockPolarity +
+    129                                                       param->msbFirst +
+    130                                                       UCSYNC +
+    131                                                       param->spiMode
+    132                                                       );
+    133          }
+    134          
+    135          void EUSCI_A_SPI_changeClockPhasePolarity(uint16_t baseAddress,
+    136                                                    uint16_t clockPhase,
+    137                                                    uint16_t clockPolarity)
+    138          {
+    139              //Disable the USCI Module
+    140              HWREG16(baseAddress + OFS_UCAxCTLW0) |= UCSWRST;
+    141          
+    142              HWREG16(baseAddress + OFS_UCAxCTLW0) &= ~(UCCKPH + UCCKPL);
+    143          
+    144              HWREG16(baseAddress + OFS_UCAxCTLW0) |= (
+    145                  clockPhase +
+    146                  clockPolarity
+    147                  );
+    148          
+    149              //Reset the UCSWRST bit to enable the USCI Module
+    150              HWREG16(baseAddress + OFS_UCAxCTLW0) &= ~(UCSWRST);
+    151          }
+    152          
+    153          void EUSCI_A_SPI_transmitData(uint16_t baseAddress,
+    154                                        uint8_t transmitData)
+    155          {
+    156              HWREG16(baseAddress + OFS_UCAxTXBUF) = transmitData;
+    157          }
+    158          
+    159          uint8_t EUSCI_A_SPI_receiveData(uint16_t baseAddress)
+    160          {
+    161              return (HWREG16(baseAddress + OFS_UCAxRXBUF));
+    162          }
+    163          
+    164          void EUSCI_A_SPI_enableInterrupt(uint16_t baseAddress,
+    165                                           uint8_t mask)
+    166          {
+    167              HWREG16(baseAddress + OFS_UCAxIE) |= mask;
+    168          }
+    169          
+    170          void EUSCI_A_SPI_disableInterrupt(uint16_t baseAddress,
+    171                                            uint8_t mask)
+    172          {
+    173              HWREG16(baseAddress + OFS_UCAxIE) &= ~mask;
+    174          }
+    175          
+    176          uint8_t EUSCI_A_SPI_getInterruptStatus(uint16_t baseAddress,
+    177                                                 uint8_t mask)
+    178          {
+    179              return (HWREG16(baseAddress + OFS_UCAxIFG) & mask);
+    180          }
+    181          
+    182          void EUSCI_A_SPI_clearInterrupt(uint16_t baseAddress,
+    183                                          uint8_t mask)
+    184          {
+    185              HWREG16(baseAddress + OFS_UCAxIFG) &= ~mask;
+    186          }
+    187          
+    188          void EUSCI_A_SPI_enable(uint16_t baseAddress)
+    189          {
+    190              //Reset the UCSWRST bit to enable the USCI Module
+    191              HWREG16(baseAddress + OFS_UCAxCTLW0) &= ~(UCSWRST);
+    192          }
+    193          
+    194          void EUSCI_A_SPI_disable(uint16_t baseAddress)
+    195          {
+    196              //Set the UCSWRST bit to disable the USCI Module
+    197              HWREG16(baseAddress + OFS_UCAxCTLW0) |= UCSWRST;
+    198          }
+    199          
+    200          uint32_t EUSCI_A_SPI_getReceiveBufferAddress(uint16_t baseAddress)
+    201          {
+    202              return (baseAddress + OFS_UCAxRXBUF);
+    203          }
+    204          
+    205          uint32_t EUSCI_A_SPI_getTransmitBufferAddress(uint16_t baseAddress)
+    206          {
+    207              return (baseAddress + OFS_UCAxTXBUF);
+    208          }
+    209          
+    210          uint16_t EUSCI_A_SPI_isBusy(uint16_t baseAddress)
+    211          {
+    212              //Return the bus busy status.
+    213              return (HWREG16(baseAddress + OFS_UCAxSTATW) & UCBUSY);
+    214          }
+    215          
+    216          #endif
+    217          //*****************************************************************************
+    218          //
+    219          //! Close the doxygen group for eusci_a_spi_api
+    220          //! @}
+    221          //
+    222          //*****************************************************************************
+
+   Maximum stack usage in bytes:
+
+   CSTACK Function
+   ------ --------
+      4   EUSCI_A_SPI_changeClockPhasePolarity
+      6   EUSCI_A_SPI_changeMasterClock
+        6 ?DivMod32u
+      4   EUSCI_A_SPI_clearInterrupt
+      4   EUSCI_A_SPI_disable
+      4   EUSCI_A_SPI_disableInterrupt
+      4   EUSCI_A_SPI_enable
+      4   EUSCI_A_SPI_enableInterrupt
+      4   EUSCI_A_SPI_getInterruptStatus
+      4   EUSCI_A_SPI_getReceiveBufferAddress
+      4   EUSCI_A_SPI_getTransmitBufferAddress
+      8   EUSCI_A_SPI_initMaster
+        8 ?DivMod32u
+      4   EUSCI_A_SPI_initSlave
+      4   EUSCI_A_SPI_isBusy
+      4   EUSCI_A_SPI_receiveData
+      4   EUSCI_A_SPI_select4PinFunctionality
+      4   EUSCI_A_SPI_transmitData
+
+
+   Segment part sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+      24  EUSCI_A_SPI_changeClockPhasePolarity
+      48  EUSCI_A_SPI_changeMasterClock
+      12  EUSCI_A_SPI_clearInterrupt
+       6  EUSCI_A_SPI_disable
+      12  EUSCI_A_SPI_disableInterrupt
+       6  EUSCI_A_SPI_enable
+      12  EUSCI_A_SPI_enableInterrupt
+      10  EUSCI_A_SPI_getInterruptStatus
+       8  EUSCI_A_SPI_getReceiveBufferAddress
+       8  EUSCI_A_SPI_getTransmitBufferAddress
+      96  EUSCI_A_SPI_initMaster
+      36  EUSCI_A_SPI_initSlave
+      10  EUSCI_A_SPI_isBusy
+       8  EUSCI_A_SPI_receiveData
+      14  EUSCI_A_SPI_select4PinFunctionality
+      12  EUSCI_A_SPI_transmitData
+
+ 
+ 322 bytes in segment CODE
+ 
+ 322 bytes of CODE memory
+
+Errors: none
+Warnings: none

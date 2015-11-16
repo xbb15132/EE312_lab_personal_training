@@ -1,0 +1,589 @@
+###############################################################################
+#
+# IAR C/C++ Compiler V6.30.2.940/W32 for MSP430           07/Nov/2015  19:53:05
+# Copyright 1996-2015 IAR Systems AB.
+# Standalone license - IAR Embedded Workbench for Texas Instruments MSP430
+#
+#    __rt_version  =  3
+#    __double_size =  32
+#    __reg_r4      =  free
+#    __reg_r5      =  free
+#    __pic         =  no
+#    __core        =  430X
+#    __data_model  =  small
+#    __code_model  =  large
+#    Source file   =  I:\GitHub\xbb15132\driverlib\MSP430FR2xx_4xx\lcd_e.c
+#    Command line  =  
+#        I:\GitHub\xbb15132\driverlib\MSP430FR2xx_4xx\lcd_e.c -lcN
+#        I:\GitHub\xbb15132\Lab_2\Debug\List\ -o
+#        I:\GitHub\xbb15132\Lab_2\Debug\Obj\ --no_cse --no_unroll --no_inline
+#        --no_code_motion --no_tbaa --debug -D__MSP430FR4133__ -e --double=32
+#        --dlib_config E:\IAR-new\430\lib\dlib\dl430xlsfn.h -I
+#        I:\GitHub\xbb15132\Lab_2\..\ -I
+#        I:\GitHub\xbb15132\Lab_2\..\driverlib\MSP430FR2xx_4xx\ --core=430X
+#        --data_model=small -Ol --hw_workaround=CPU40 --segment __data16=DATA16
+#        --segment __data20=DATA20 --code_model=large
+#    List file     =  I:\GitHub\xbb15132\Lab_2\Debug\List\lcd_e.lst
+#    Object file   =  I:\GitHub\xbb15132\Lab_2\Debug\Obj\lcd_e.r43
+#
+###############################################################################
+
+I:\GitHub\xbb15132\driverlib\MSP430FR2xx_4xx\lcd_e.c
+      1          /* --COPYRIGHT--,BSD
+      2           * Copyright (c) 2014, Texas Instruments Incorporated
+      3           * All rights reserved.
+      4           *
+      5           * Redistribution and use in source and binary forms, with or without
+      6           * modification, are permitted provided that the following conditions
+      7           * are met:
+      8           *
+      9           * *  Redistributions of source code must retain the above copyright
+     10           *    notice, this list of conditions and the following disclaimer.
+     11           *
+     12           * *  Redistributions in binary form must reproduce the above copyright
+     13           *    notice, this list of conditions and the following disclaimer in the
+     14           *    documentation and/or other materials provided with the distribution.
+     15           *
+     16           * *  Neither the name of Texas Instruments Incorporated nor the names of
+     17           *    its contributors may be used to endorse or promote products derived
+     18           *    from this software without specific prior written permission.
+     19           *
+     20           * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+     21           * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+     22           * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+     23           * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+     24           * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+     25           * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+     26           * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+     27           * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+     28           * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+     29           * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+     30           * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+     31           * --/COPYRIGHT--*/
+     32          //*****************************************************************************
+     33          //
+     34          // lcd_e.c - Driver for the lcd_e Module.
+     35          //
+     36          //*****************************************************************************
+     37          
+     38          //*****************************************************************************
+     39          //
+     40          //! \addtogroup lcd_e_api lcd_e
+     41          //! @{
+     42          //
+     43          //*****************************************************************************
+     44          
+     45          #include "inc/hw_regaccess.h"
+     46          #include "inc/hw_memmap.h"
+     47          
+     48          #ifdef __MSP430_HAS_LCD_E__
+     49          #include "lcd_e.h"
+     50          
+     51          #include <assert.h>
+     52          
+     53          //*****************************************************************************
+     54          //
+     55          //! Initialization parameter instance
+     56          //!
+     57          //! \param clockSource selects the clock that will be used by the LCD_E.
+     58          //!        Valid values are:
+     59          //!        - \b LCD_E_CLOCKSOURCE_XTCLK [Default] - The external
+     60          //!             oscillator clock.
+     61          //!        - \b LCD_E_CLOCKSOURCE_ACLK - The Auxilary Clock.
+     62          //!        - \b LCD_E_CLOCKSOURCE_VLOCLK - The internal low power and low
+     63          //!             frequency clock.
+     64          //!        \n Modified bits are \b LCDSSEL of \b LCDCTL0 register.
+     65          //! \param clockDivider selects the divider for LCD_E frequency.
+     66          //!        Valid values are:
+     67          //!        - \b LCD_E_CLOCKDIVIDER_1 [Default]
+     68          //!        - \b LCD_E_CLOCKDIVIDER_2
+     69          //!        - \b LCD_E_CLOCKDIVIDER_3
+     70          //!        - \b LCD_E_CLOCKDIVIDER_4
+     71          //!        - \b LCD_E_CLOCKDIVIDER_5
+     72          //!        - \b LCD_E_CLOCKDIVIDER_6
+     73          //!        - \b LCD_E_CLOCKDIVIDER_7
+     74          //!        - \b LCD_E_CLOCKDIVIDER_8
+     75          //!        - \b LCD_E_CLOCKDIVIDER_9
+     76          //!        - \b LCD_E_CLOCKDIVIDER_10
+     77          //!        - \b LCD_E_CLOCKDIVIDER_11
+     78          //!        - \b LCD_E_CLOCKDIVIDER_12
+     79          //!        - \b LCD_E_CLOCKDIVIDER_13
+     80          //!        - \b LCD_E_CLOCKDIVIDER_14
+     81          //!        - \b LCD_E_CLOCKDIVIDER_15
+     82          //!        - \b LCD_E_CLOCKDIVIDER_16
+     83          //!        - \b LCD_E_CLOCKDIVIDER_17
+     84          //!        - \b LCD_E_CLOCKDIVIDER_18
+     85          //!        - \b LCD_E_CLOCKDIVIDER_19
+     86          //!        - \b LCD_E_CLOCKDIVIDER_20
+     87          //!        - \b LCD_E_CLOCKDIVIDER_21
+     88          //!        - \b LCD_E_CLOCKDIVIDER_22
+     89          //!        - \b LCD_E_CLOCKDIVIDER_23
+     90          //!        - \b LCD_E_CLOCKDIVIDER_24
+     91          //!        - \b LCD_E_CLOCKDIVIDER_25
+     92          //!        - \b LCD_E_CLOCKDIVIDER_26
+     93          //!        - \b LCD_E_CLOCKDIVIDER_27
+     94          //!        - \b LCD_E_CLOCKDIVIDER_28
+     95          //!        - \b LCD_E_CLOCKDIVIDER_29
+     96          //!        - \b LCD_E_CLOCKDIVIDER_30
+     97          //!        - \b LCD_E_CLOCKDIVIDER_31
+     98          //!        - \b LCD_E_CLOCKDIVIDER_32
+     99          //!        \n Modified bits are \b LCDDIVx of \b LCDCTL0 register.
+    100          //! \param muxRate selects LCD_E mux rate.
+    101          //!        Valid values are:
+    102          //!        - \b LCD_E_STATIC [Default]
+    103          //!        - \b LCD_E_2_MUX
+    104          //!        - \b LCD_E_3_MUX
+    105          //!        - \b LCD_E_4_MUX
+    106          //!        - \b LCD_E_5_MUX
+    107          //!        - \b LCD_E_6_MUX
+    108          //!        - \b LCD_E_7_MUX
+    109          //!        - \b LCD_E_8_MUX
+    110          //!        \n Modified bits are \b LCDMXx of \b LCDCTL0 register.
+    111          //! \param waveforms selects LCD_E waveform mode.
+    112          //!        Valid values are:
+    113          //!        - \b LCD_E_STANDARD_WAVEFORMS [Default]
+    114          //!        - \b LCD_E_LOW_POWER_WAVEFORMS
+    115          //!        \n Modified bits are \b LCDLP of \b LCDCTL0 register.
+    116          //! \param segments sets LCD_E segment on/off.
+    117          //!        Valid values are:
+    118          //!        - \b LCD_E_SEGMENTS_DISABLED [Default]
+    119          //!        - \b LCD_E_SEGMENTS_ENABLED
+    120          //!        \n Modified bits are \b LCDSON of \b LCDCTL0 register.
+    121          //
+    122          //*****************************************************************************
+    123          const LCD_E_initParam LCD_E_INIT_PARAM = {
+    124              LCD_E_CLOCKSOURCE_XTCLK,
+    125              LCD_E_CLOCKDIVIDER_1,
+    126              LCD_E_STATIC,
+    127              LCD_E_STANDARD_WAVEFORMS,
+    128              LCD_E_SEGMENTS_DISABLED
+    129          };
+    130          
+    131          static void setLCDFunction(uint16_t baseAddress,
+    132                                     uint8_t index,
+    133                                     uint16_t value)
+    134          {
+    135              switch(index)
+    136              {
+    137              case 0:
+    138                  HWREG16(baseAddress + OFS_LCDPCTL0) |= value;
+    139                  break;
+    140              case 1:
+    141                  HWREG16(baseAddress + OFS_LCDPCTL1) |= value;
+    142                  break;
+    143              case 2:
+    144                  HWREG16(baseAddress + OFS_LCDPCTL2) |= value;
+    145                  break;
+    146              default: break;
+    147              }
+    148          }
+    149          
+    150          void LCD_E_init(uint16_t baseAddress,
+    151                          LCD_E_initParam *initParams)
+    152          {
+    153              HWREG16(baseAddress + OFS_LCDCTL0) &= ~LCDON;
+    154              HWREG16(baseAddress + OFS_LCDCTL0) &= ~(LCDMX0 | LCDMX1 | LCDMX2 | LCDSSEL_3
+    155                                                      | LCDLP | LCDSON | LCDDIV_31);
+    156              HWREG16(baseAddress + OFS_LCDCTL0) |= initParams->muxRate;
+    157              HWREG16(baseAddress + OFS_LCDCTL0) |= initParams->clockSource;
+    158              HWREG16(baseAddress + OFS_LCDCTL0) |= initParams->waveforms;
+    159              HWREG16(baseAddress + OFS_LCDCTL0) |= initParams->segments;
+    160              HWREG16(baseAddress + OFS_LCDCTL0) |= initParams->clockDivider;
+    161          }
+    162          
+    163          void LCD_E_on(uint16_t baseAddress)
+    164          {
+    165              HWREG16(SYS_BASE + OFS_SYSCFG2) |= LCDPCTL;
+    166              HWREG16(baseAddress + OFS_LCDCTL0) |= LCDON;
+    167          }
+    168          
+    169          void LCD_E_off(uint16_t baseAddress)
+    170          {
+    171              HWREG16(SYS_BASE + OFS_SYSCFG2) &= ~LCDPCTL;
+    172              HWREG16(baseAddress + OFS_LCDCTL0) &= ~LCDON;
+    173          }
+    174          
+    175          void LCD_E_clearInterrupt(uint16_t baseAddress,
+    176                                    uint16_t mask)
+    177          {
+    178              HWREG8(baseAddress + OFS_LCDCTL1_L) &= ~(mask >> 8);
+    179          }
+    180          
+    181          uint16_t LCD_E_getInterruptStatus(uint16_t baseAddress,
+    182                                            uint16_t mask)
+    183          {
+    184              return (HWREG8(baseAddress + OFS_LCDCTL1_L) & (mask >> 8));
+    185          }
+    186          
+    187          void LCD_E_enableInterrupt(uint16_t baseAddress,
+    188                                     uint16_t mask)
+    189          {
+    190              HWREG16(baseAddress + OFS_LCDCTL1) |= mask;
+    191          }
+    192          
+    193          void LCD_E_disableInterrupt(uint16_t baseAddress,
+    194                                      uint16_t mask)
+    195          {
+    196              HWREG16(baseAddress + OFS_LCDCTL1) &= ~mask;
+    197          }
+    198          
+    199          void LCD_E_clearAllMemory(uint16_t baseAddress)
+    200          {
+    201              HWREG16(baseAddress + OFS_LCDMEMCTL) |= LCDCLRM;
+    202          }
+    203          
+    204          void LCD_E_clearAllBlinkingMemory(uint16_t baseAddress)
+    205          {
+    206              HWREG16(baseAddress + OFS_LCDMEMCTL) |= LCDCLRBM;
+    207          }
+    208          
+    209          void LCD_E_selectDisplayMemory(uint16_t baseAddress,
+    210                                         uint16_t displayMemory)
+    211          {
+    212              HWREG16(baseAddress + OFS_LCDMEMCTL) &= ~LCDDISP;
+    213              HWREG16(baseAddress + OFS_LCDMEMCTL) |= displayMemory;
+    214          }
+    215          
+    216          void LCD_E_setBlinkingControl(uint16_t baseAddress,
+    217                                        uint16_t clockPrescalar,
+    218                                        uint16_t mode)
+    219          {
+    220              HWREG16(baseAddress + OFS_LCDBLKCTL) &=
+    221                  ~(LCDBLKPRE2 | LCDBLKPRE1 | LCDBLKPRE0 | LCDBLKMOD_3);
+    222          
+    223              HWREG16(baseAddress + OFS_LCDBLKCTL) |= (clockPrescalar | mode);
+    224          }
+    225          
+    226          void LCD_E_enableChargePump(uint16_t baseAddress)
+    227          {
+    228              HWREG16(baseAddress + OFS_LCDVCTL) |= LCDCPEN;
+    229          }
+    230          
+    231          void LCD_E_disableChargePump(uint16_t baseAddress)
+    232          {
+    233              HWREG16(baseAddress + OFS_LCDVCTL) &= ~LCDCPEN;
+    234          }
+    235          
+    236          void LCD_E_setChargePumpFreq(uint16_t baseAddress,
+    237                                       uint16_t freq)
+    238          {
+    239              HWREG16(baseAddress + OFS_LCDVCTL) &=
+    240                  ~(LCDCPFSEL3 | LCDCPFSEL2 | LCDCPFSEL1 | LCDCPFSEL0);
+    241          
+    242              HWREG16(baseAddress + OFS_LCDVCTL) |= freq;
+    243          }
+    244          
+    245          void LCD_E_setVLCDSource(uint16_t baseAddress,
+    246                                   uint16_t r13Source,
+    247                                   uint16_t r33Source)
+    248          {
+    249              HWREG16(baseAddress + OFS_LCDVCTL) &= ~(LCDREFMODE | LCDSELVDD);
+    250          
+    251              HWREG16(baseAddress + OFS_LCDVCTL) |= (r13Source | r33Source);
+    252          }
+    253          
+    254          void LCD_E_setVLCDVoltage(uint16_t baseAddress,
+    255                                    uint16_t voltage)
+    256          {
+    257              HWREG16(baseAddress + OFS_LCDVCTL) &= ~(VLCD3 | VLCD2 | VLCD1 | VLCD0);
+    258          
+    259              HWREG16(baseAddress + OFS_LCDVCTL) |= voltage;
+    260          }
+    261          
+    262          void LCD_E_setReferenceMode(uint16_t baseAddress,
+    263                                      uint16_t mode)
+    264          {
+    265              HWREG16(baseAddress + OFS_LCDVCTL) &= ~(LCDREFMODE);
+    266          
+    267              HWREG16(baseAddress + OFS_LCDVCTL) |= mode;
+    268          }
+    269          
+    270          void LCD_E_setPinAsLCDFunction(uint16_t baseAddress,
+    271                                         uint8_t pin)
+    272          {
+    273              HWREG16(baseAddress + OFS_LCDCTL0) &= ~LCDON;
+    274          
+    275              uint8_t idx = pin >> 4;
+    276              uint16_t val = 1 << (pin & 0xF);
+    277          
+    278              setLCDFunction(baseAddress, idx, val);
+    279          }
+    280          
+    281          void LCD_E_setPinAsPortFunction(uint16_t baseAddress,
+    282                                          uint8_t pin)
+    283          {
+    284              HWREG16(baseAddress + OFS_LCDCTL0) &= ~LCDON;
+    285          
+    286              uint8_t idx = pin >> 4;
+    287              uint16_t val = 1 << (pin & 0xF);
+    288          
+    289              switch(idx)
+    290              {
+    291              case 0:
+    292                  HWREG16(baseAddress + OFS_LCDPCTL0) &= ~val;
+    293                  break;
+    294              case 1:
+    295                  HWREG16(baseAddress + OFS_LCDPCTL1) &= ~val;
+    296                  break;
+    297              case 2:
+    298                  HWREG16(baseAddress + OFS_LCDPCTL2) &= ~val;
+    299                  break;
+    300              default: break;
+    301              }
+    302          }
+    303          
+    304          void LCD_E_setPinAsLCDFunctionEx(uint16_t baseAddress,
+    305                                           uint8_t startPin,
+    306                                           uint8_t endPin)
+    307          {
+    308              uint8_t startIdx = startPin >> 4;
+    309              uint8_t endIdx = endPin >> 4;
+    310              uint8_t startPos = startPin & 0xF;
+    311              uint8_t endPos = endPin & 0xF;
+    312              uint16_t val = 0;
+    313              uint8_t i = 0;
+    314          
+    315              HWREG16(baseAddress + OFS_LCDCTL0) &= ~LCDON;
+    316          
+    317              if(startIdx == endIdx)
+    318              {
+    319                  val = (0xFFFF >> (15 - endPos)) & (0xFFFF << startPos);
+    320          
+    321                  setLCDFunction(baseAddress, startIdx, val);
+    322              }
+    323              else
+    324              {
+    325                  val = 0xFFFF >> (15 - endPos);
+    326                  setLCDFunction(baseAddress, endIdx, val);
+    327          
+    328                  for(i = endIdx - 1; i > startIdx; i--)
+    329                  {
+    330                      setLCDFunction(baseAddress, i, 0xFFFF);
+    331                  }
+    332          
+    333                  val = 0xFFFF << startPos;
+    334                  setLCDFunction(baseAddress, startIdx, val);
+    335              }
+    336          }
+    337          
+    338          void LCD_E_setPinAsCOM(uint16_t baseAddress,
+    339                                 uint8_t pin,
+    340                                 uint8_t com)
+    341          {
+    342              HWREG16(baseAddress + OFS_LCDCTL0) &= ~LCDON;
+    343          
+    344              uint8_t idx = pin >> 4;
+    345              uint16_t val = 1 << (pin & 0xF);
+    346              uint8_t muxRate =
+    347                  HWREG16(baseAddress + OFS_LCDCTL0) & (LCDMX2 | LCDMX1 | LCDMX0);
+    348          
+    349              switch(idx)
+    350              {
+    351              case 0:
+    352                  HWREG16(baseAddress + OFS_LCDCSSEL0) |= val;
+    353                  break;
+    354              case 1:
+    355                  HWREG16(baseAddress + OFS_LCDCSSEL1) |= val;
+    356                  break;
+    357              case 2:
+    358                  HWREG16(baseAddress + OFS_LCDCSSEL2) |= val;
+    359                  break;
+    360              default: break;
+    361              }
+    362          
+    363              // Set LCDMem to COM as well for corresponding pins
+    364              if(muxRate <= (LCDMX1 | LCDMX0))
+    365              {
+    366                  if(pin & 1)
+    367                  {
+    368                      HWREG8(baseAddress + OFS_LCDM0W + pin / 2) |= (com & 0xF) << 4;
+    369                      HWREG8(baseAddress + OFS_LCDBM0W + pin / 2) |= (com & 0xF) << 4;
+    370                  }
+    371                  else
+    372                  {
+    373                      HWREG8(baseAddress + OFS_LCDM0W + pin / 2) |= (com & 0xF);
+    374                      HWREG8(baseAddress + OFS_LCDBM0W + pin / 2) |= (com & 0xF);
+    375                  }
+    376              }
+    377              else
+    378              {
+    379                  //5-mux, 6-mux, 7-mux, 8-mux
+    380                  HWREG8(baseAddress + OFS_LCDM0W + pin) |= com;
+    381                  HWREG8(baseAddress + OFS_LCDBM0W + pin) |= com;
+    382              }
+    383          }
+    384          
+    385          void LCD_E_setPinAsSEG(uint16_t baseAddress,
+    386                                 uint8_t pin)
+    387          {
+    388              // Set LCDMem to COM as well for corresponding pins
+    389              HWREG16(baseAddress + OFS_LCDCTL0) &= ~LCDON;
+    390          
+    391              uint8_t idx = pin >> 4;
+    392              uint16_t val = 1 << (pin & 0xF);
+    393          
+    394              switch(idx)
+    395              {
+    396              case 0:
+    397                  HWREG16(baseAddress + OFS_LCDCSSEL0) &= ~val;
+    398                  break;
+    399              case 1:
+    400                  HWREG16(baseAddress + OFS_LCDCSSEL1) &= ~val;
+    401                  break;
+    402              case 2:
+    403                  HWREG16(baseAddress + OFS_LCDCSSEL2) &= ~val;
+    404                  break;
+    405              default: break;
+    406              }
+    407          }
+    408          
+    409          void LCD_E_setMemory(uint16_t baseAddress,
+    410                               uint8_t memory,
+    411                               uint8_t mask)
+    412          {
+    413              HWREG8(baseAddress + OFS_LCDM0W + memory) = mask;
+    414          }
+    415          
+    416          void LCD_E_updateMemory(uint16_t baseAddress,
+    417                                  uint8_t memory,
+    418                                  uint8_t mask)
+    419          {
+    420              HWREG8(baseAddress + OFS_LCDM0W + memory) |= mask;
+    421          }
+    422          
+    423          void LCD_E_toggleMemory(uint16_t baseAddress,
+    424                                  uint8_t memory,
+    425                                  uint8_t mask)
+    426          {
+    427              HWREG8(baseAddress + OFS_LCDM0W + memory) ^= mask;
+    428          }
+    429          
+    430          void LCD_E_clearMemory(uint16_t baseAddress,
+    431                                 uint8_t memory,
+    432                                 uint8_t mask)
+    433          {
+    434              HWREG8(baseAddress + OFS_LCDM0W + memory) &= ~mask;
+    435          }
+    436          
+    437          void LCD_E_setBlinkingMemory(uint16_t baseAddress,
+    438                                       uint8_t memory,
+    439                                       uint8_t mask)
+    440          {
+    441              HWREG8(baseAddress + OFS_LCDBM0W + memory) = mask;
+    442          }
+    443          
+    444          void LCD_E_updateBlinkingMemory(uint16_t baseAddress,
+    445                                          uint8_t memory,
+    446                                          uint8_t mask)
+    447          {
+    448              HWREG8(baseAddress + OFS_LCDBM0W + memory) |= mask;
+    449          }
+    450          
+    451          void LCD_E_toggleBlinkingMemory(uint16_t baseAddress,
+    452                                          uint8_t memory,
+    453                                          uint8_t mask)
+    454          {
+    455              HWREG8(baseAddress + OFS_LCDBM0W + memory) ^= mask;
+    456          }
+    457          
+    458          void LCD_E_clearBlinkingMemory(uint16_t baseAddress,
+    459                                         uint8_t memory,
+    460                                         uint8_t mask)
+    461          {
+    462              HWREG8(baseAddress + OFS_LCDBM0W + memory) &= ~mask;
+    463          }
+    464          
+    465          #endif
+    466          //*****************************************************************************
+    467          //
+    468          //! Close the doxygen group for lcd_e_api
+    469          //! @}
+    470          //
+    471          //*****************************************************************************
+
+   Maximum stack usage in bytes:
+
+   CSTACK Function
+   ------ --------
+      4   LCD_E_clearAllBlinkingMemory
+      4   LCD_E_clearAllMemory
+      4   LCD_E_clearBlinkingMemory
+      4   LCD_E_clearInterrupt
+      4   LCD_E_clearMemory
+      4   LCD_E_disableChargePump
+      4   LCD_E_disableInterrupt
+      4   LCD_E_enableChargePump
+      4   LCD_E_enableInterrupt
+      4   LCD_E_getInterruptStatus
+      4   LCD_E_init
+      4   LCD_E_off
+      4   LCD_E_on
+      4   LCD_E_selectDisplayMemory
+      4   LCD_E_setBlinkingControl
+      4   LCD_E_setBlinkingMemory
+      4   LCD_E_setChargePumpFreq
+      4   LCD_E_setMemory
+     12   LCD_E_setPinAsCOM
+       12 ?DivMod8u
+      4   LCD_E_setPinAsLCDFunction
+        0   -> setLCDFunction
+     16   LCD_E_setPinAsLCDFunctionEx
+       16   -> setLCDFunction
+      4   LCD_E_setPinAsPortFunction
+      4   LCD_E_setPinAsSEG
+      4   LCD_E_setReferenceMode
+      4   LCD_E_setVLCDSource
+      4   LCD_E_setVLCDVoltage
+      4   LCD_E_toggleBlinkingMemory
+      4   LCD_E_toggleMemory
+      4   LCD_E_updateBlinkingMemory
+      4   LCD_E_updateMemory
+      4   setLCDFunction
+
+
+   Segment part sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+      10  LCD_E_INIT_PARAM
+      10  LCD_E_clearAllBlinkingMemory
+      10  LCD_E_clearAllMemory
+      14  LCD_E_clearBlinkingMemory
+      14  LCD_E_clearInterrupt
+      14  LCD_E_clearMemory
+      10  LCD_E_disableChargePump
+       8  LCD_E_disableInterrupt
+      10  LCD_E_enableChargePump
+       8  LCD_E_enableInterrupt
+      16  LCD_E_getInterruptStatus
+      42  LCD_E_init
+      12  LCD_E_off
+      12  LCD_E_on
+      20  LCD_E_selectDisplayMemory
+      20  LCD_E_setBlinkingControl
+      14  LCD_E_setBlinkingMemory
+      18  LCD_E_setChargePumpFreq
+      14  LCD_E_setMemory
+     240  LCD_E_setPinAsCOM
+      34  LCD_E_setPinAsLCDFunction
+     156  LCD_E_setPinAsLCDFunctionEx
+      72  LCD_E_setPinAsPortFunction
+      72  LCD_E_setPinAsSEG
+      16  LCD_E_setReferenceMode
+      20  LCD_E_setVLCDSource
+      18  LCD_E_setVLCDVoltage
+      14  LCD_E_toggleBlinkingMemory
+      14  LCD_E_toggleMemory
+      14  LCD_E_updateBlinkingMemory
+      14  LCD_E_updateMemory
+      44  setLCDFunction
+
+ 
+ 994 bytes in segment CODE
+  10 bytes in segment DATA16_C
+ 
+ 994 bytes of CODE  memory
+  10 bytes of CONST memory
+
+Errors: none
+Warnings: none

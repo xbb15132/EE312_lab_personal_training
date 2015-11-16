@@ -1,0 +1,772 @@
+###############################################################################
+#
+# IAR C/C++ Compiler V6.30.2.940/W32 for MSP430           07/Nov/2015  19:53:04
+# Copyright 1996-2015 IAR Systems AB.
+# Standalone license - IAR Embedded Workbench for Texas Instruments MSP430
+#
+#    __rt_version  =  3
+#    __double_size =  32
+#    __reg_r4      =  free
+#    __reg_r5      =  free
+#    __pic         =  no
+#    __core        =  430X
+#    __data_model  =  small
+#    __code_model  =  large
+#    Source file   =  
+#        I:\GitHub\xbb15132\driverlib\MSP430FR2xx_4xx\eusci_b_i2c.c
+#    Command line  =  
+#        I:\GitHub\xbb15132\driverlib\MSP430FR2xx_4xx\eusci_b_i2c.c -lcN
+#        I:\GitHub\xbb15132\Lab_2\Debug\List\ -o
+#        I:\GitHub\xbb15132\Lab_2\Debug\Obj\ --no_cse --no_unroll --no_inline
+#        --no_code_motion --no_tbaa --debug -D__MSP430FR4133__ -e --double=32
+#        --dlib_config E:\IAR-new\430\lib\dlib\dl430xlsfn.h -I
+#        I:\GitHub\xbb15132\Lab_2\..\ -I
+#        I:\GitHub\xbb15132\Lab_2\..\driverlib\MSP430FR2xx_4xx\ --core=430X
+#        --data_model=small -Ol --hw_workaround=CPU40 --segment __data16=DATA16
+#        --segment __data20=DATA20 --code_model=large
+#    List file     =  I:\GitHub\xbb15132\Lab_2\Debug\List\eusci_b_i2c.lst
+#    Object file   =  I:\GitHub\xbb15132\Lab_2\Debug\Obj\eusci_b_i2c.r43
+#
+###############################################################################
+
+I:\GitHub\xbb15132\driverlib\MSP430FR2xx_4xx\eusci_b_i2c.c
+      1          /* --COPYRIGHT--,BSD
+      2           * Copyright (c) 2014, Texas Instruments Incorporated
+      3           * All rights reserved.
+      4           *
+      5           * Redistribution and use in source and binary forms, with or without
+      6           * modification, are permitted provided that the following conditions
+      7           * are met:
+      8           *
+      9           * *  Redistributions of source code must retain the above copyright
+     10           *    notice, this list of conditions and the following disclaimer.
+     11           *
+     12           * *  Redistributions in binary form must reproduce the above copyright
+     13           *    notice, this list of conditions and the following disclaimer in the
+     14           *    documentation and/or other materials provided with the distribution.
+     15           *
+     16           * *  Neither the name of Texas Instruments Incorporated nor the names of
+     17           *    its contributors may be used to endorse or promote products derived
+     18           *    from this software without specific prior written permission.
+     19           *
+     20           * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+     21           * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+     22           * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+     23           * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+     24           * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+     25           * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+     26           * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+     27           * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+     28           * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+     29           * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+     30           * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+     31           * --/COPYRIGHT--*/
+     32          //*****************************************************************************
+     33          //
+     34          // eusci_b_i2c.c - Driver for the eusci_b_i2c Module.
+     35          //
+     36          //*****************************************************************************
+     37          
+     38          //*****************************************************************************
+     39          //
+     40          //! \addtogroup eusci_b_i2c_api eusci_b_i2c
+     41          //! @{
+     42          //
+     43          //*****************************************************************************
+     44          
+     45          #include "inc/hw_regaccess.h"
+     46          #include "inc/hw_memmap.h"
+     47          
+     48          #ifdef __MSP430_HAS_EUSCI_Bx__
+     49          #include "eusci_b_i2c.h"
+     50          
+     51          #include <assert.h>
+     52          
+     53          void EUSCI_B_I2C_initMaster(uint16_t baseAddress,
+     54                                      EUSCI_B_I2C_initMasterParam *param)
+     55          {
+     56              uint16_t preScalarValue;
+     57          
+     58              //Disable the USCI module and clears the other bits of control register
+     59              HWREG16(baseAddress + OFS_UCBxCTLW0) = UCSWRST;
+     60          
+     61              //Configure Automatic STOP condition generation
+     62              HWREG16(baseAddress + OFS_UCBxCTLW1) &= ~UCASTP_3;
+     63              HWREG16(baseAddress + OFS_UCBxCTLW1) |= param->autoSTOPGeneration;
+     64          
+     65              //Byte Count Threshold
+     66              HWREG16(baseAddress + OFS_UCBxTBCNT) = param->byteCounterThreshold;
+     67              /*
+     68               * Configure as I2C master mode.
+     69               * UCMST = Master mode
+     70               * UCMODE_3 = I2C mode
+     71               * UCSYNC = Synchronous mode
+     72               */
+     73              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCMST + UCMODE_3 + UCSYNC;
+     74          
+     75              //Configure I2C clock source
+     76              HWREG16(baseAddress +
+     77                      OFS_UCBxCTLW0) |= (param->selectClockSource + UCSWRST);
+     78          
+     79              /*
+     80               * Compute the clock divider that achieves the fastest speed less than or
+     81               * equal to the desired speed.  The numerator is biased to favor a larger
+     82               * clock divider so that the resulting clock is always less than or equal
+     83               * to the desired clock, never greater.
+     84               */
+     85              preScalarValue = (uint16_t)(param->i2cClk / param->dataRate);
+     86              HWREG16(baseAddress + OFS_UCBxBRW) = preScalarValue;
+     87          }
+     88          
+     89          void EUSCI_B_I2C_initSlave(uint16_t baseAddress,
+     90                                     EUSCI_B_I2C_initSlaveParam *param)
+     91          {
+     92              //Disable the USCI module
+     93              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCSWRST;
+     94          
+     95              //Clear USCI master mode
+     96              HWREG16(baseAddress + OFS_UCBxCTLW0) &= ~UCMST;
+     97          
+     98              //Configure I2C as Slave and Synchronous mode
+     99              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCMODE_3 + UCSYNC;
+    100          
+    101              //Set up the slave address.
+    102              HWREG16(baseAddress + OFS_UCBxI2COA0 + param->slaveAddressOffset)
+    103                  = param->slaveAddress + param->slaveOwnAddressEnable;
+    104          }
+    105          
+    106          void EUSCI_B_I2C_enable(uint16_t baseAddress)
+    107          {
+    108              //Reset the UCSWRST bit to enable the USCI Module
+    109              HWREG16(baseAddress + OFS_UCBxCTLW0) &= ~(UCSWRST);
+    110          }
+    111          
+    112          void EUSCI_B_I2C_disable(uint16_t baseAddress)
+    113          {
+    114              //Set the UCSWRST bit to disable the USCI Module
+    115              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCSWRST;
+    116          }
+    117          
+    118          void EUSCI_B_I2C_setSlaveAddress(uint16_t baseAddress,
+    119                                           uint8_t slaveAddress)
+    120          {
+    121              //Set the address of the slave with which the master will communicate.
+    122              HWREG16(baseAddress + OFS_UCBxI2CSA) = (slaveAddress);
+    123          }
+    124          
+    125          void EUSCI_B_I2C_setMode(uint16_t baseAddress,
+    126                                   uint8_t mode)
+    127          {
+    128              HWREG16(baseAddress + OFS_UCBxCTLW0) &= ~EUSCI_B_I2C_TRANSMIT_MODE;
+    129              HWREG16(baseAddress + OFS_UCBxCTLW0) |= mode;
+    130          }
+    131          
+    132          uint8_t EUSCI_B_I2C_getMode(uint16_t baseAddress)
+    133          {
+    134              //Read the I2C mode.
+    135              return ((HWREG16(baseAddress + OFS_UCBxCTLW0) & UCTR));
+    136          }
+    137          
+    138          void EUSCI_B_I2C_slavePutData(uint16_t baseAddress,
+    139                                        uint8_t transmitData)
+    140          {
+    141              //Send single byte data.
+    142              HWREG16(baseAddress + OFS_UCBxTXBUF) = transmitData;
+    143          }
+    144          
+    145          uint8_t EUSCI_B_I2C_slaveGetData(uint16_t baseAddress)
+    146          {
+    147              //Read a byte.
+    148              return (HWREG16(baseAddress + OFS_UCBxRXBUF));
+    149          }
+    150          
+    151          uint16_t EUSCI_B_I2C_isBusBusy(uint16_t baseAddress)
+    152          {
+    153              //Return the bus busy status.
+    154              return (HWREG16(baseAddress + OFS_UCBxSTATW) & UCBBUSY);
+    155          }
+    156          
+    157          uint16_t EUSCI_B_I2C_masterIsStopSent(uint16_t baseAddress)
+    158          {
+    159              return (HWREG16(baseAddress + OFS_UCBxCTLW0) & UCTXSTP);
+    160          }
+    161          
+    162          uint16_t EUSCI_B_I2C_masterIsStartSent(uint16_t baseAddress)
+    163          {
+    164              return (HWREG16(baseAddress + OFS_UCBxCTLW0) & UCTXSTT);
+    165          }
+    166          
+    167          void EUSCI_B_I2C_enableInterrupt(uint16_t baseAddress,
+    168                                           uint16_t mask)
+    169          {
+    170              //Enable the interrupt masked bit
+    171              HWREG16(baseAddress + OFS_UCBxIE) |= mask;
+    172          }
+    173          
+    174          void EUSCI_B_I2C_disableInterrupt(uint16_t baseAddress,
+    175                                            uint16_t mask)
+    176          {
+    177              //Disable the interrupt masked bit
+    178              HWREG16(baseAddress + OFS_UCBxIE) &= ~(mask);
+    179          }
+    180          
+    181          void EUSCI_B_I2C_clearInterrupt(uint16_t baseAddress,
+    182                                          uint16_t mask)
+    183          {
+    184              //Clear the I2C interrupt source.
+    185              HWREG16(baseAddress + OFS_UCBxIFG) &= ~(mask);
+    186          }
+    187          
+    188          uint16_t EUSCI_B_I2C_getInterruptStatus(uint16_t baseAddress,
+    189                                                  uint16_t mask)
+    190          {
+    191              //Return the interrupt status of the request masked bit.
+    192              return (HWREG16(baseAddress + OFS_UCBxIFG) & mask);
+    193          }
+    194          
+    195          void EUSCI_B_I2C_masterSendSingleByte(uint16_t baseAddress,
+    196                                                uint8_t txData)
+    197          {
+    198              //Store current TXIE status
+    199              uint16_t txieStatus = HWREG16(baseAddress + OFS_UCBxIE) & UCTXIE;
+    200          
+    201              //Disable transmit interrupt enable
+    202              HWREG16(baseAddress + OFS_UCBxIE) &= ~(UCTXIE);
+    203          
+    204              //Send start condition.
+    205              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCTR + UCTXSTT;
+    206          
+    207              //Poll for transmit interrupt flag.
+    208              while(!(HWREG16(baseAddress + OFS_UCBxIFG) & UCTXIFG))
+    209              {
+    210                  ;
+    211              }
+    212          
+    213              //Send single byte data.
+    214              HWREG16(baseAddress + OFS_UCBxTXBUF) = txData;
+    215          
+    216              //Poll for transmit interrupt flag.
+    217              while(!(HWREG16(baseAddress + OFS_UCBxIFG) & UCTXIFG))
+    218              {
+    219                  ;
+    220              }
+    221          
+    222              //Send stop condition.
+    223              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCTXSTP;
+    224          
+    225              //Clear transmit interrupt flag before enabling interrupt again
+    226              HWREG16(baseAddress + OFS_UCBxIFG) &= ~(UCTXIFG);
+    227          
+    228              //Reinstate transmit interrupt enable
+    229              HWREG16(baseAddress + OFS_UCBxIE) |= txieStatus;
+    230          }
+    231          
+    232          uint8_t EUSCI_B_I2C_masterReceiveSingleByte(uint16_t baseAddress)
+    233          {
+    234              //Set USCI in Receive mode
+    235              HWREG16(baseAddress + OFS_UCBxCTLW0) &= ~UCTR;
+    236          
+    237              //Send start
+    238              HWREG16(baseAddress + OFS_UCBxCTLW0) |= (UCTXSTT + UCTXSTP);
+    239          
+    240              //Poll for receive interrupt flag.
+    241              while(!(HWREG16(baseAddress + OFS_UCBxIFG) & UCRXIFG))
+    242              {
+    243                  ;
+    244              }
+    245          
+    246              //Send single byte data.
+    247              return (HWREG16(baseAddress + OFS_UCBxRXBUF));
+    248          }
+    249          
+    250          bool EUSCI_B_I2C_masterSendSingleByteWithTimeout(uint16_t baseAddress,
+    251                                                           uint8_t txData,
+    252                                                           uint32_t timeout)
+    253          {
+    254              // Creating variable for second timeout scenario
+    255              uint32_t timeout2 = timeout;
+    256          
+    257              //Store current TXIE status
+    258              uint16_t txieStatus = HWREG16(baseAddress + OFS_UCBxIE) & UCTXIE;
+    259          
+    260              //Disable transmit interrupt enable
+    261              HWREG16(baseAddress + OFS_UCBxIE) &= ~(UCTXIE);
+    262          
+    263              //Send start condition.
+    264              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCTR + UCTXSTT;
+    265          
+    266              //Poll for transmit interrupt flag.
+    267              while((!(HWREG16(baseAddress + OFS_UCBxIFG) & UCTXIFG)) && --timeout)
+    268              {
+    269                  ;
+    270              }
+    271          
+    272              //Check if transfer timed out
+    273              if(timeout == 0)
+    274              {
+    275                  return (STATUS_FAIL);
+    276              }
+    277          
+    278              //Send single byte data.
+    279              HWREG16(baseAddress + OFS_UCBxTXBUF) = txData;
+    280          
+    281              //Poll for transmit interrupt flag.
+    282              while((!(HWREG16(baseAddress + OFS_UCBxIFG) & UCTXIFG)) && --timeout2)
+    283              {
+    284                  ;
+    285              }
+    286          
+    287              //Check if transfer timed out
+    288              if(timeout2 == 0)
+    289              {
+    290                  return (STATUS_FAIL);
+    291              }
+    292          
+    293              //Send stop condition.
+    294              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCTXSTP;
+    295          
+    296              //Clear transmit interrupt flag before enabling interrupt again
+    297              HWREG16(baseAddress + OFS_UCBxIFG) &= ~(UCTXIFG);
+    298          
+    299              //Reinstate transmit interrupt enable
+    300              HWREG16(baseAddress + OFS_UCBxIE) |= txieStatus;
+    301          
+    302              return (STATUS_SUCCESS);
+    303          }
+    304          
+    305          void EUSCI_B_I2C_masterSendMultiByteStart(uint16_t baseAddress,
+    306                                                    uint8_t txData)
+    307          {
+    308              //Store current transmit interrupt enable
+    309              uint16_t txieStatus = HWREG16(baseAddress + OFS_UCBxIE) & UCTXIE;
+    310          
+    311              //Disable transmit interrupt enable
+    312              HWREG16(baseAddress + OFS_UCBxIE) &= ~(UCTXIE);
+    313          
+    314              //Send start condition.
+    315              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCTR + UCTXSTT;
+    316          
+    317              //Poll for transmit interrupt flag.
+    318              while(!(HWREG16(baseAddress + OFS_UCBxIFG) & UCTXIFG))
+    319              {
+    320                  ;
+    321              }
+    322          
+    323              //Send single byte data.
+    324              HWREG16(baseAddress + OFS_UCBxTXBUF) = txData;
+    325          
+    326              //Reinstate transmit interrupt enable
+    327              HWREG16(baseAddress + OFS_UCBxIE) |= txieStatus;
+    328          }
+    329          
+    330          bool EUSCI_B_I2C_masterSendMultiByteStartWithTimeout(uint16_t baseAddress,
+    331                                                               uint8_t txData,
+    332                                                               uint32_t timeout)
+    333          {
+    334              //Store current transmit interrupt enable
+    335              uint16_t txieStatus = HWREG16(baseAddress + OFS_UCBxIE) & UCTXIE;
+    336          
+    337              //Disable transmit interrupt enable
+    338              HWREG16(baseAddress + OFS_UCBxIE) &= ~(UCTXIE);
+    339          
+    340              //Send start condition.
+    341              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCTR + UCTXSTT;
+    342          
+    343              //Poll for transmit interrupt flag.
+    344              while((!(HWREG16(baseAddress + OFS_UCBxIFG) & UCTXIFG)) && --timeout)
+    345              {
+    346                  ;
+    347              }
+    348          
+    349              //Check if transfer timed out
+    350              if(timeout == 0)
+    351              {
+    352                  return (STATUS_FAIL);
+    353              }
+    354          
+    355              //Send single byte data.
+    356              HWREG16(baseAddress + OFS_UCBxTXBUF) = txData;
+    357          
+    358              //Reinstate transmit interrupt enable
+    359              HWREG16(baseAddress + OFS_UCBxIE) |= txieStatus;
+    360          
+    361              return(STATUS_SUCCESS);
+    362          }
+    363          
+    364          void EUSCI_B_I2C_masterSendMultiByteNext(uint16_t baseAddress,
+    365                                                   uint8_t txData)
+    366          {
+    367              //If interrupts are not used, poll for flags
+    368              if(!(HWREG16(baseAddress + OFS_UCBxIE) & UCTXIE))
+    369              {
+    370                  //Poll for transmit interrupt flag.
+    371                  while(!(HWREG16(baseAddress + OFS_UCBxIFG) & UCTXIFG))
+    372                  {
+    373                      ;
+    374                  }
+    375              }
+    376          
+    377              //Send single byte data.
+    378              HWREG16(baseAddress + OFS_UCBxTXBUF) = txData;
+    379          }
+    380          
+    381          bool EUSCI_B_I2C_masterSendMultiByteNextWithTimeout(uint16_t baseAddress,
+    382                                                              uint8_t txData,
+    383                                                              uint32_t timeout)
+    384          {
+    385              //If interrupts are not used, poll for flags
+    386              if(!(HWREG16(baseAddress + OFS_UCBxIE) & UCTXIE))
+    387              {
+    388                  //Poll for transmit interrupt flag.
+    389                  while((!(HWREG16(baseAddress + OFS_UCBxIFG) & UCTXIFG)) && --timeout)
+    390                  {
+    391                      ;
+    392                  }
+    393          
+    394                  //Check if transfer timed out
+    395                  if(timeout == 0)
+    396                  {
+    397                      return (STATUS_FAIL);
+    398                  }
+    399              }
+    400          
+    401              //Send single byte data.
+    402              HWREG16(baseAddress + OFS_UCBxTXBUF) = txData;
+    403          
+    404              return(STATUS_SUCCESS);
+    405          }
+    406          
+    407          void EUSCI_B_I2C_masterSendMultiByteFinish(uint16_t baseAddress,
+    408                                                     uint8_t txData)
+    409          {
+    410              //If interrupts are not used, poll for flags
+    411              if(!(HWREG16(baseAddress + OFS_UCBxIE) & UCTXIE))
+    412              {
+    413                  //Poll for transmit interrupt flag.
+    414                  while(!(HWREG16(baseAddress + OFS_UCBxIFG) & UCTXIFG))
+    415                  {
+    416                      ;
+    417                  }
+    418              }
+    419          
+    420              //Send single byte data.
+    421              HWREG16(baseAddress + OFS_UCBxTXBUF) = txData;
+    422          
+    423              //Poll for transmit interrupt flag.
+    424              while(!(HWREG16(baseAddress + OFS_UCBxIFG) & UCTXIFG))
+    425              {
+    426                  ;
+    427              }
+    428          
+    429              //Send stop condition.
+    430              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCTXSTP;
+    431          }
+    432          
+    433          bool EUSCI_B_I2C_masterSendMultiByteFinishWithTimeout(uint16_t baseAddress,
+    434                                                                uint8_t txData,
+    435                                                                uint32_t timeout)
+    436          {
+    437              uint32_t timeout2 = timeout;
+    438          
+    439              //If interrupts are not used, poll for flags
+    440              if(!(HWREG16(baseAddress + OFS_UCBxIE) & UCTXIE))
+    441              {
+    442                  //Poll for transmit interrupt flag.
+    443                  while((!(HWREG16(baseAddress + OFS_UCBxIFG) & UCTXIFG)) && --timeout)
+    444                  {
+    445                      ;
+    446                  }
+    447          
+    448                  //Check if transfer timed out
+    449                  if(timeout == 0)
+    450                  {
+    451                      return (STATUS_FAIL);
+    452                  }
+    453              }
+    454          
+    455              //Send single byte data.
+    456              HWREG16(baseAddress + OFS_UCBxTXBUF) = txData;
+    457          
+    458              //Poll for transmit interrupt flag.
+    459              while((!(HWREG16(baseAddress + OFS_UCBxIFG) & UCTXIFG)) && --timeout2)
+    460              {
+    461                  ;
+    462              }
+    463          
+    464              //Check if transfer timed out
+    465              if(timeout2 == 0)
+    466              {
+    467                  return (STATUS_FAIL);
+    468              }
+    469          
+    470              //Send stop condition.
+    471              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCTXSTP;
+    472          
+    473              return(STATUS_SUCCESS);
+    474          }
+    475          
+    476          void EUSCI_B_I2C_masterSendStart(uint16_t baseAddress)
+    477          {
+    478              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCTXSTT;
+    479          }
+    480          
+    481          void EUSCI_B_I2C_masterSendMultiByteStop(uint16_t baseAddress)
+    482          {
+    483              //If interrupts are not used, poll for flags
+    484              if(!(HWREG16(baseAddress + OFS_UCBxIE) & UCTXIE))
+    485              {
+    486                  //Poll for transmit interrupt flag.
+    487                  while(!(HWREG16(baseAddress + OFS_UCBxIFG) & UCTXIFG))
+    488                  {
+    489                      ;
+    490                  }
+    491              }
+    492          
+    493              //Send stop condition.
+    494              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCTXSTP;
+    495          }
+    496          
+    497          bool EUSCI_B_I2C_masterSendMultiByteStopWithTimeout(uint16_t baseAddress,
+    498                                                              uint32_t timeout)
+    499          {
+    500              //If interrupts are not used, poll for flags
+    501              if(!(HWREG16(baseAddress + OFS_UCBxIE) & UCTXIE))
+    502              {
+    503                  //Poll for transmit interrupt flag.
+    504                  while((!(HWREG16(baseAddress + OFS_UCBxIFG) & UCTXIFG)) && --timeout)
+    505                  {
+    506                      ;
+    507                  }
+    508          
+    509                  //Check if transfer timed out
+    510                  if(timeout == 0)
+    511                  {
+    512                      return (STATUS_FAIL);
+    513                  }
+    514              }
+    515          
+    516              //Send stop condition.
+    517              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCTXSTP;
+    518          
+    519              return (STATUS_SUCCESS);
+    520          }
+    521          
+    522          void EUSCI_B_I2C_masterReceiveStart(uint16_t baseAddress)
+    523          {
+    524              //Set USCI in Receive mode
+    525              HWREG16(baseAddress + OFS_UCBxCTLW0) &= ~UCTR;
+    526              //Send start
+    527              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCTXSTT;
+    528          }
+    529          
+    530          uint8_t EUSCI_B_I2C_masterReceiveMultiByteNext(uint16_t baseAddress)
+    531          {
+    532              return (HWREG16(baseAddress + OFS_UCBxRXBUF));
+    533          }
+    534          
+    535          uint8_t EUSCI_B_I2C_masterReceiveMultiByteFinish(uint16_t baseAddress)
+    536          {
+    537              //Send stop condition.
+    538              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCTXSTP;
+    539          
+    540              //Wait for Stop to finish
+    541              while(HWREG16(baseAddress + OFS_UCBxCTLW0) & UCTXSTP)
+    542              {
+    543                  // Wait for RX buffer
+    544                  while(!(HWREG16(baseAddress + OFS_UCBxIFG) & UCRXIFG))
+    545                  {
+    546                      ;
+    547                  }
+    548              }
+    549          
+    550              //Capture data from receive buffer after setting stop bit due to
+    551              //MSP430 I2C critical timing.
+    552              return (HWREG16(baseAddress + OFS_UCBxRXBUF));
+    553          }
+    554          
+    555          bool EUSCI_B_I2C_masterReceiveMultiByteFinishWithTimeout(uint16_t baseAddress,
+    556                                                                   uint8_t *txData,
+    557                                                                   uint32_t timeout)
+    558          {
+    559              uint32_t timeout2 = timeout;
+    560          
+    561              //Send stop condition.
+    562              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCTXSTP;
+    563          
+    564              //Wait for Stop to finish
+    565              while((HWREG16(baseAddress + OFS_UCBxCTLW0) & UCTXSTP) && --timeout)
+    566              {
+    567                  ;
+    568              }
+    569          
+    570              //Check if transfer timed out
+    571              if(timeout == 0)
+    572              {
+    573                  return (STATUS_FAIL);
+    574              }
+    575          
+    576              // Wait for RX buffer
+    577              while((!(HWREG16(baseAddress + OFS_UCBxIFG) & UCRXIFG)) && --timeout2)
+    578              {
+    579                  ;
+    580              }
+    581          
+    582              //Check if transfer timed out
+    583              if(timeout2 == 0)
+    584              {
+    585                  return (STATUS_FAIL);
+    586              }
+    587          
+    588              //Capture data from receive buffer after setting stop bit due to
+    589              //MSP430 I2C critical timing.
+    590              *txData = (HWREG8(baseAddress + OFS_UCBxRXBUF));
+    591          
+    592              return (STATUS_SUCCESS);
+    593          }
+    594          
+    595          void EUSCI_B_I2C_masterReceiveMultiByteStop(uint16_t baseAddress)
+    596          {
+    597              //Send stop condition.
+    598              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCTXSTP;
+    599          }
+    600          
+    601          void EUSCI_B_I2C_enableMultiMasterMode(uint16_t baseAddress)
+    602          {
+    603              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCSWRST;
+    604              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCMM;
+    605          }
+    606          
+    607          void EUSCI_B_I2C_disableMultiMasterMode(uint16_t baseAddress)
+    608          {
+    609              HWREG16(baseAddress + OFS_UCBxCTLW0) |= UCSWRST;
+    610              HWREG16(baseAddress + OFS_UCBxCTLW0) &= ~UCMM;
+    611          }
+    612          
+    613          uint8_t EUSCI_B_I2C_masterReceiveSingle(uint16_t baseAddress)
+    614          {
+    615              //Polling RXIFG0 if RXIE is not enabled
+    616              if(!(HWREG16(baseAddress + OFS_UCBxIE) & UCRXIE0))
+    617              {
+    618                  while(!(HWREG16(baseAddress + OFS_UCBxIFG) & UCRXIFG0))
+    619                  {
+    620                      ;
+    621                  }
+    622              }
+    623          
+    624              //Read a byte.
+    625              return (HWREG16(baseAddress + OFS_UCBxRXBUF));
+    626          }
+    627          
+    628          uint32_t EUSCI_B_I2C_getReceiveBufferAddress(uint16_t baseAddress)
+    629          {
+    630              return (baseAddress + OFS_UCBxRXBUF);
+    631          }
+    632          
+    633          uint32_t EUSCI_B_I2C_getTransmitBufferAddress(uint16_t baseAddress)
+    634          {
+    635              return (baseAddress + OFS_UCBxTXBUF);
+    636          }
+    637          
+    638          #endif
+    639          //*****************************************************************************
+    640          //
+    641          //! Close the doxygen group for eusci_b_i2c_api
+    642          //! @}
+    643          //
+    644          //*****************************************************************************
+
+   Maximum stack usage in bytes:
+
+   CSTACK Function
+   ------ --------
+      4   EUSCI_B_I2C_clearInterrupt
+      4   EUSCI_B_I2C_disable
+      4   EUSCI_B_I2C_disableInterrupt
+      4   EUSCI_B_I2C_disableMultiMasterMode
+      4   EUSCI_B_I2C_enable
+      4   EUSCI_B_I2C_enableInterrupt
+      4   EUSCI_B_I2C_enableMultiMasterMode
+      4   EUSCI_B_I2C_getInterruptStatus
+      4   EUSCI_B_I2C_getMode
+      4   EUSCI_B_I2C_getReceiveBufferAddress
+      4   EUSCI_B_I2C_getTransmitBufferAddress
+      6   EUSCI_B_I2C_initMaster
+        6 ?DivMod32u
+      4   EUSCI_B_I2C_initSlave
+      4   EUSCI_B_I2C_isBusBusy
+      4   EUSCI_B_I2C_masterIsStartSent
+      4   EUSCI_B_I2C_masterIsStopSent
+      4   EUSCI_B_I2C_masterReceiveMultiByteFinish
+     10   EUSCI_B_I2C_masterReceiveMultiByteFinishWithTimeout
+      4   EUSCI_B_I2C_masterReceiveMultiByteNext
+      4   EUSCI_B_I2C_masterReceiveMultiByteStop
+      4   EUSCI_B_I2C_masterReceiveSingle
+      4   EUSCI_B_I2C_masterReceiveSingleByte
+      4   EUSCI_B_I2C_masterReceiveStart
+      4   EUSCI_B_I2C_masterSendMultiByteFinish
+     12   EUSCI_B_I2C_masterSendMultiByteFinishWithTimeout
+      4   EUSCI_B_I2C_masterSendMultiByteNext
+      6   EUSCI_B_I2C_masterSendMultiByteNextWithTimeout
+      4   EUSCI_B_I2C_masterSendMultiByteStart
+      8   EUSCI_B_I2C_masterSendMultiByteStartWithTimeout
+      4   EUSCI_B_I2C_masterSendMultiByteStop
+      4   EUSCI_B_I2C_masterSendMultiByteStopWithTimeout
+      4   EUSCI_B_I2C_masterSendSingleByte
+     12   EUSCI_B_I2C_masterSendSingleByteWithTimeout
+      4   EUSCI_B_I2C_masterSendStart
+      4   EUSCI_B_I2C_setMode
+      4   EUSCI_B_I2C_setSlaveAddress
+      4   EUSCI_B_I2C_slaveGetData
+      4   EUSCI_B_I2C_slavePutData
+
+
+   Segment part sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+      10  EUSCI_B_I2C_clearInterrupt
+       6  EUSCI_B_I2C_disable
+      10  EUSCI_B_I2C_disableInterrupt
+      14  EUSCI_B_I2C_disableMultiMasterMode
+       6  EUSCI_B_I2C_enable
+      10  EUSCI_B_I2C_enableInterrupt
+      14  EUSCI_B_I2C_enableMultiMasterMode
+      10  EUSCI_B_I2C_getInterruptStatus
+       8  EUSCI_B_I2C_getMode
+       8  EUSCI_B_I2C_getReceiveBufferAddress
+       8  EUSCI_B_I2C_getTransmitBufferAddress
+      98  EUSCI_B_I2C_initMaster
+      46  EUSCI_B_I2C_initSlave
+      10  EUSCI_B_I2C_isBusBusy
+       6  EUSCI_B_I2C_masterIsStartSent
+       6  EUSCI_B_I2C_masterIsStopSent
+      34  EUSCI_B_I2C_masterReceiveMultiByteFinish
+      94  EUSCI_B_I2C_masterReceiveMultiByteFinishWithTimeout
+       8  EUSCI_B_I2C_masterReceiveMultiByteNext
+       6  EUSCI_B_I2C_masterReceiveMultiByteStop
+      32  EUSCI_B_I2C_masterReceiveSingle
+      34  EUSCI_B_I2C_masterReceiveSingleByte
+      14  EUSCI_B_I2C_masterReceiveStart
+      54  EUSCI_B_I2C_masterSendMultiByteFinish
+     114  EUSCI_B_I2C_masterSendMultiByteFinishWithTimeout
+      36  EUSCI_B_I2C_masterSendMultiByteNext
+      70  EUSCI_B_I2C_masterSendMultiByteNextWithTimeout
+      60  EUSCI_B_I2C_masterSendMultiByteStart
+      94  EUSCI_B_I2C_masterSendMultiByteStartWithTimeout
+      30  EUSCI_B_I2C_masterSendMultiByteStop
+      56  EUSCI_B_I2C_masterSendMultiByteStopWithTimeout
+      88  EUSCI_B_I2C_masterSendSingleByte
+     148  EUSCI_B_I2C_masterSendSingleByteWithTimeout
+       6  EUSCI_B_I2C_masterSendStart
+      16  EUSCI_B_I2C_setMode
+      12  EUSCI_B_I2C_setSlaveAddress
+       8  EUSCI_B_I2C_slaveGetData
+      12  EUSCI_B_I2C_slavePutData
+
+ 
+ 1 296 bytes in segment CODE
+ 
+ 1 296 bytes of CODE memory
+
+Errors: none
+Warnings: none

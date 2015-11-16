@@ -1,0 +1,368 @@
+###############################################################################
+#
+# IAR C/C++ Compiler V6.30.2.940/W32 for MSP430           07/Nov/2015  19:53:04
+# Copyright 1996-2015 IAR Systems AB.
+# Standalone license - IAR Embedded Workbench for Texas Instruments MSP430
+#
+#    __rt_version  =  3
+#    __double_size =  32
+#    __reg_r4      =  free
+#    __reg_r5      =  free
+#    __pic         =  no
+#    __core        =  430X
+#    __data_model  =  small
+#    __code_model  =  large
+#    Source file   =  
+#        I:\GitHub\xbb15132\driverlib\MSP430FR2xx_4xx\eusci_a_uart.c
+#    Command line  =  
+#        I:\GitHub\xbb15132\driverlib\MSP430FR2xx_4xx\eusci_a_uart.c -lcN
+#        I:\GitHub\xbb15132\Lab_2\Debug\List\ -o
+#        I:\GitHub\xbb15132\Lab_2\Debug\Obj\ --no_cse --no_unroll --no_inline
+#        --no_code_motion --no_tbaa --debug -D__MSP430FR4133__ -e --double=32
+#        --dlib_config E:\IAR-new\430\lib\dlib\dl430xlsfn.h -I
+#        I:\GitHub\xbb15132\Lab_2\..\ -I
+#        I:\GitHub\xbb15132\Lab_2\..\driverlib\MSP430FR2xx_4xx\ --core=430X
+#        --data_model=small -Ol --hw_workaround=CPU40 --segment __data16=DATA16
+#        --segment __data20=DATA20 --code_model=large
+#    List file     =  I:\GitHub\xbb15132\Lab_2\Debug\List\eusci_a_uart.lst
+#    Object file   =  I:\GitHub\xbb15132\Lab_2\Debug\Obj\eusci_a_uart.r43
+#
+###############################################################################
+
+I:\GitHub\xbb15132\driverlib\MSP430FR2xx_4xx\eusci_a_uart.c
+      1          /* --COPYRIGHT--,BSD
+      2           * Copyright (c) 2014, Texas Instruments Incorporated
+      3           * All rights reserved.
+      4           *
+      5           * Redistribution and use in source and binary forms, with or without
+      6           * modification, are permitted provided that the following conditions
+      7           * are met:
+      8           *
+      9           * *  Redistributions of source code must retain the above copyright
+     10           *    notice, this list of conditions and the following disclaimer.
+     11           *
+     12           * *  Redistributions in binary form must reproduce the above copyright
+     13           *    notice, this list of conditions and the following disclaimer in the
+     14           *    documentation and/or other materials provided with the distribution.
+     15           *
+     16           * *  Neither the name of Texas Instruments Incorporated nor the names of
+     17           *    its contributors may be used to endorse or promote products derived
+     18           *    from this software without specific prior written permission.
+     19           *
+     20           * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+     21           * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+     22           * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+     23           * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+     24           * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+     25           * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+     26           * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+     27           * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+     28           * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+     29           * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+     30           * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+     31           * --/COPYRIGHT--*/
+     32          //*****************************************************************************
+     33          //
+     34          // eusci_a_uart.c - Driver for the eusci_a_uart Module.
+     35          //
+     36          //*****************************************************************************
+     37          
+     38          //*****************************************************************************
+     39          //
+     40          //! \addtogroup eusci_a_uart_api eusci_a_uart
+     41          //! @{
+     42          //
+     43          //*****************************************************************************
+     44          
+     45          #include "inc/hw_regaccess.h"
+     46          #include "inc/hw_memmap.h"
+     47          
+     48          #ifdef __MSP430_HAS_EUSCI_Ax__
+     49          #include "eusci_a_uart.h"
+     50          
+     51          #include <assert.h>
+     52          
+     53          bool EUSCI_A_UART_init(uint16_t baseAddress,
+     54                                 EUSCI_A_UART_initParam *param)
+     55          {
+     56              bool retVal = STATUS_SUCCESS;
+     57          
+     58              //Disable the USCI Module
+     59              HWREG16(baseAddress + OFS_UCAxCTLW0) |= UCSWRST;
+     60          
+     61              //Clock source select
+     62              HWREG16(baseAddress + OFS_UCAxCTLW0) &= ~UCSSEL_3;
+     63              HWREG16(baseAddress + OFS_UCAxCTLW0) |= param->selectClockSource;
+     64          
+     65              //MSB, LSB select
+     66              HWREG16(baseAddress + OFS_UCAxCTLW0) &= ~UCMSB;
+     67              HWREG16(baseAddress + OFS_UCAxCTLW0) |= param->msborLsbFirst;
+     68          
+     69              //UCSPB = 0(1 stop bit) OR 1(2 stop bits)
+     70              HWREG16(baseAddress + OFS_UCAxCTLW0) &= ~UCSPB;
+     71              HWREG16(baseAddress + OFS_UCAxCTLW0) |= param->numberofStopBits;
+     72          
+     73              //Parity
+     74              switch(param->parity)
+     75              {
+     76              case EUSCI_A_UART_NO_PARITY:
+     77                  //No Parity
+     78                  HWREG16(baseAddress + OFS_UCAxCTLW0) &= ~UCPEN;
+     79                  break;
+     80              case EUSCI_A_UART_ODD_PARITY:
+     81                  //Odd Parity
+     82                  HWREG16(baseAddress + OFS_UCAxCTLW0) |= UCPEN;
+     83                  HWREG16(baseAddress + OFS_UCAxCTLW0) &= ~UCPAR;
+     84                  break;
+     85              case EUSCI_A_UART_EVEN_PARITY:
+     86                  //Even Parity
+     87                  HWREG16(baseAddress + OFS_UCAxCTLW0) |= UCPEN;
+     88                  HWREG16(baseAddress + OFS_UCAxCTLW0) |= UCPAR;
+     89                  break;
+     90              }
+     91          
+     92              //BaudRate Control Register
+     93              HWREG16(baseAddress + OFS_UCAxBRW) = param->clockPrescalar;
+     94              //Modulation Control Register
+     95              HWREG16(baseAddress + OFS_UCAxMCTLW) = ((param->secondModReg << 8)
+     96                                                      + (param->firstModReg <<
+     97              4) + param->overSampling);
+     98          
+     99              //Asynchronous mode & 8 bit character select & clear mode
+    100              HWREG16(baseAddress + OFS_UCAxCTLW0) &= ~(UCSYNC +
+    101                                                        UC7BIT +
+    102                                                        UCMODE_3
+    103                                                        );
+    104          
+    105              //Configure  UART mode.
+    106              HWREG16(baseAddress + OFS_UCAxCTLW0) |= param->uartMode;
+    107          
+    108              //Reset UCRXIE, UCBRKIE, UCDORM, UCTXADDR, UCTXBRK
+    109              HWREG16(baseAddress + OFS_UCAxCTLW0) &= ~(UCRXEIE + UCBRKIE + UCDORM +
+    110                                                        UCTXADDR + UCTXBRK
+    111                                                        );
+    112              return (retVal);
+    113          }
+    114          
+    115          void EUSCI_A_UART_transmitData(uint16_t baseAddress,
+    116                                         uint8_t transmitData)
+    117          {
+    118              //If interrupts are not used, poll for flags
+    119              if(!(HWREG16(baseAddress + OFS_UCAxIE) & UCTXIE))
+    120              {
+    121                  //Poll for transmit interrupt flag
+    122                  while(!(HWREG16(baseAddress + OFS_UCAxIFG) & UCTXIFG))
+    123                  {
+    124                      ;
+    125                  }
+    126              }
+    127          
+    128              HWREG16(baseAddress + OFS_UCAxTXBUF) = transmitData;
+    129          }
+    130          
+    131          uint8_t EUSCI_A_UART_receiveData(uint16_t baseAddress)
+    132          {
+    133              //If interrupts are not used, poll for flags
+    134              if(!(HWREG16(baseAddress + OFS_UCAxIE) & UCRXIE))
+    135              {
+    136                  //Poll for receive interrupt flag
+    137                  while(!(HWREG16(baseAddress + OFS_UCAxIFG) & UCRXIFG))
+    138                  {
+    139                      ;
+    140                  }
+    141              }
+    142          
+    143              return (HWREG16(baseAddress + OFS_UCAxRXBUF));
+    144          }
+    145          
+    146          void EUSCI_A_UART_enableInterrupt(uint16_t baseAddress,
+    147                                            uint8_t mask)
+    148          {
+    149              uint8_t locMask;
+    150          
+    151              locMask = (mask & (EUSCI_A_UART_RECEIVE_INTERRUPT
+    152                                 | EUSCI_A_UART_TRANSMIT_INTERRUPT
+    153                                 | EUSCI_A_UART_STARTBIT_INTERRUPT
+    154                                 | EUSCI_A_UART_TRANSMIT_COMPLETE_INTERRUPT));
+    155          
+    156              HWREG16(baseAddress + OFS_UCAxIE) |= locMask;
+    157          
+    158              locMask = (mask & (EUSCI_A_UART_RECEIVE_ERRONEOUSCHAR_INTERRUPT
+    159                                 | EUSCI_A_UART_BREAKCHAR_INTERRUPT));
+    160              HWREG16(baseAddress + OFS_UCAxCTLW0) |= locMask;
+    161          }
+    162          
+    163          void EUSCI_A_UART_disableInterrupt(uint16_t baseAddress,
+    164                                             uint8_t mask)
+    165          {
+    166              uint8_t locMask;
+    167          
+    168              locMask = (mask & (EUSCI_A_UART_RECEIVE_INTERRUPT
+    169                                 | EUSCI_A_UART_TRANSMIT_INTERRUPT
+    170                                 | EUSCI_A_UART_STARTBIT_INTERRUPT
+    171                                 | EUSCI_A_UART_TRANSMIT_COMPLETE_INTERRUPT));
+    172              HWREG16(baseAddress + OFS_UCAxIE) &= ~locMask;
+    173          
+    174              locMask = (mask & (EUSCI_A_UART_RECEIVE_ERRONEOUSCHAR_INTERRUPT
+    175                                 | EUSCI_A_UART_BREAKCHAR_INTERRUPT));
+    176              HWREG16(baseAddress + OFS_UCAxCTLW0) &= ~locMask;
+    177          }
+    178          
+    179          uint8_t EUSCI_A_UART_getInterruptStatus(uint16_t baseAddress,
+    180                                                  uint8_t mask)
+    181          {
+    182              return (HWREG16(baseAddress + OFS_UCAxIFG) & mask);
+    183          }
+    184          
+    185          void EUSCI_A_UART_clearInterrupt(uint16_t baseAddress,
+    186                                           uint8_t mask)
+    187          {
+    188              //Clear the UART interrupt source.
+    189              HWREG16(baseAddress + OFS_UCAxIFG) &= ~(mask);
+    190          }
+    191          
+    192          void EUSCI_A_UART_enable(uint16_t baseAddress)
+    193          {
+    194              //Reset the UCSWRST bit to enable the USCI Module
+    195              HWREG16(baseAddress + OFS_UCAxCTLW0) &= ~(UCSWRST);
+    196          }
+    197          
+    198          void EUSCI_A_UART_disable(uint16_t baseAddress)
+    199          {
+    200              //Set the UCSWRST bit to disable the USCI Module
+    201              HWREG16(baseAddress + OFS_UCAxCTLW0) |= UCSWRST;
+    202          }
+    203          
+    204          uint8_t EUSCI_A_UART_queryStatusFlags(uint16_t baseAddress,
+    205                                                uint8_t mask)
+    206          {
+    207              return (HWREG16(baseAddress + OFS_UCAxSTATW) & mask);
+    208          }
+    209          
+    210          void EUSCI_A_UART_setDormant(uint16_t baseAddress)
+    211          {
+    212              HWREG16(baseAddress + OFS_UCAxCTLW0) |= UCDORM;
+    213          }
+    214          
+    215          void EUSCI_A_UART_resetDormant(uint16_t baseAddress)
+    216          {
+    217              HWREG16(baseAddress + OFS_UCAxCTLW0) &= ~UCDORM;
+    218          }
+    219          
+    220          void EUSCI_A_UART_transmitAddress(uint16_t baseAddress,
+    221                                            uint8_t transmitAddress)
+    222          {
+    223              //Set UCTXADDR bit
+    224              HWREG16(baseAddress + OFS_UCAxCTLW0) |= UCTXADDR;
+    225          
+    226              //Place next byte to be sent into the transmit buffer
+    227              HWREG16(baseAddress + OFS_UCAxTXBUF) = transmitAddress;
+    228          }
+    229          
+    230          void EUSCI_A_UART_transmitBreak(uint16_t baseAddress)
+    231          {
+    232              //Set UCTXADDR bit
+    233              HWREG16(baseAddress + OFS_UCAxCTLW0) |= UCTXBRK;
+    234          
+    235              //If current mode is automatic baud-rate detection
+    236              if(EUSCI_A_UART_AUTOMATIC_BAUDRATE_DETECTION_MODE ==
+    237                 (HWREG16(baseAddress + OFS_UCAxCTLW0) &
+    238                  EUSCI_A_UART_AUTOMATIC_BAUDRATE_DETECTION_MODE))
+    239              {
+    240                  HWREG16(baseAddress +
+    241                          OFS_UCAxTXBUF) = EUSCI_A_UART_AUTOMATICBAUDRATE_SYNC;
+    242              }
+    243              else
+    244              {
+    245                  HWREG16(baseAddress + OFS_UCAxTXBUF) = DEFAULT_SYNC;
+    246              }
+    247          
+    248              //If interrupts are not used, poll for flags
+    249              if(!(HWREG16(baseAddress + OFS_UCAxIE) & UCTXIE))
+    250              {
+    251                  //Poll for transmit interrupt flag
+    252                  while(!(HWREG16(baseAddress + OFS_UCAxIFG) & UCTXIFG))
+    253                  {
+    254                      ;
+    255                  }
+    256              }
+    257          }
+    258          
+    259          uint32_t EUSCI_A_UART_getReceiveBufferAddress(uint16_t baseAddress)
+    260          {
+    261              return (baseAddress + OFS_UCAxRXBUF);
+    262          }
+    263          
+    264          uint32_t EUSCI_A_UART_getTransmitBufferAddress(uint16_t baseAddress)
+    265          {
+    266              return (baseAddress + OFS_UCAxTXBUF);
+    267          }
+    268          
+    269          void EUSCI_A_UART_selectDeglitchTime(uint16_t baseAddress,
+    270                                               uint16_t deglitchTime)
+    271          {
+    272              HWREG16(baseAddress + OFS_UCAxCTLW1) &= ~(UCGLIT1 + UCGLIT0);
+    273          
+    274              HWREG16(baseAddress + OFS_UCAxCTLW1) |= deglitchTime;
+    275          }
+    276          
+    277          #endif
+    278          //*****************************************************************************
+    279          //
+    280          //! Close the doxygen group for eusci_a_uart_api
+    281          //! @}
+    282          //
+    283          //*****************************************************************************
+
+   Maximum stack usage in bytes:
+
+   CSTACK Function
+   ------ --------
+      4   EUSCI_A_UART_clearInterrupt
+      4   EUSCI_A_UART_disable
+      4   EUSCI_A_UART_disableInterrupt
+      4   EUSCI_A_UART_enable
+      4   EUSCI_A_UART_enableInterrupt
+      4   EUSCI_A_UART_getInterruptStatus
+      4   EUSCI_A_UART_getReceiveBufferAddress
+      4   EUSCI_A_UART_getTransmitBufferAddress
+      6   EUSCI_A_UART_init
+      4   EUSCI_A_UART_queryStatusFlags
+      4   EUSCI_A_UART_receiveData
+      4   EUSCI_A_UART_resetDormant
+      4   EUSCI_A_UART_selectDeglitchTime
+      4   EUSCI_A_UART_setDormant
+      4   EUSCI_A_UART_transmitAddress
+      4   EUSCI_A_UART_transmitBreak
+      4   EUSCI_A_UART_transmitData
+
+
+   Segment part sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+      12  EUSCI_A_UART_clearInterrupt
+       6  EUSCI_A_UART_disable
+      32  EUSCI_A_UART_disableInterrupt
+       6  EUSCI_A_UART_enable
+      32  EUSCI_A_UART_enableInterrupt
+      10  EUSCI_A_UART_getInterruptStatus
+       8  EUSCI_A_UART_getReceiveBufferAddress
+       8  EUSCI_A_UART_getTransmitBufferAddress
+     188  EUSCI_A_UART_init
+      10  EUSCI_A_UART_queryStatusFlags
+      32  EUSCI_A_UART_receiveData
+       6  EUSCI_A_UART_resetDormant
+      18  EUSCI_A_UART_selectDeglitchTime
+       6  EUSCI_A_UART_setDormant
+      18  EUSCI_A_UART_transmitAddress
+      68  EUSCI_A_UART_transmitBreak
+      36  EUSCI_A_UART_transmitData
+
+ 
+ 496 bytes in segment CODE
+ 
+ 496 bytes of CODE memory
+
+Errors: none
+Warnings: none

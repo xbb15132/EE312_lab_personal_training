@@ -1,0 +1,123 @@
+###############################################################################
+#
+# IAR C/C++ Compiler V6.30.2.940/W32 for MSP430           11/Nov/2015  15:28:28
+# Copyright 1996-2015 IAR Systems AB.
+# Standalone license - IAR Embedded Workbench for Texas Instruments MSP430
+#
+#    __rt_version  =  3
+#    __double_size =  32
+#    __reg_r4      =  free
+#    __reg_r5      =  free
+#    __pic         =  no
+#    __core        =  430X
+#    __data_model  =  small
+#    __code_model  =  large
+#    Source file   =  I:\GitHub\xbb15132\Lab_2\LEDDriver.c
+#    Command line  =  
+#        I:\GitHub\xbb15132\Lab_2\LEDDriver.c -lcN
+#        I:\GitHub\xbb15132\Lab_2\Debug\List\ -o
+#        I:\GitHub\xbb15132\Lab_2\Debug\Obj\ --no_cse --no_unroll --no_inline
+#        --no_code_motion --no_tbaa --debug -D__MSP430FR4133__ -e --double=32
+#        --dlib_config E:\IAR-new\430\lib\dlib\dl430xlsfn.h -I
+#        I:\GitHub\xbb15132\Lab_2\..\ -I
+#        I:\GitHub\xbb15132\Lab_2\..\driverlib\MSP430FR2xx_4xx\ --core=430X
+#        --data_model=small -Ol --hw_workaround=CPU40 --segment __data16=DATA16
+#        --segment __data20=DATA20 --code_model=large
+#    List file     =  I:\GitHub\xbb15132\Lab_2\Debug\List\LEDDriver.lst
+#    Object file   =  I:\GitHub\xbb15132\Lab_2\Debug\Obj\LEDDriver.r43
+#
+###############################################################################
+
+I:\GitHub\xbb15132\Lab_2\LEDDriver.c
+      1          /**************************************************
+      2           * LEDDriver.c
+      3           * Drives LED display
+      4           *
+      5           * Copyright 2015 University of Strathclyde
+      6           *
+      7           *
+      8           **************************************************/
+      9          
+     10          #include "LedDriver.h"
+     11          
+     12          //Current dial value
+     13          unsigned char ledValue_ = 0;
+     14          
+     15          /**
+     16          Initialise LED Dial, setting GPIO parameters
+     17          */
+     18          void initialiseLedDial()
+     19          {
+     20            //GPIO 2.7
+     21            GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN7);
+     22              
+     23            //GPIO 5.1, 5.2, 5.3
+     24            //Inserted by student
+     25            GPIO_setAsOutputPin(GPIO_PORT_P5, GPIO_PIN1);
+     26            GPIO_setAsOutputPin(GPIO_PORT_P5, GPIO_PIN2);
+     27            GPIO_setAsOutputPin(GPIO_PORT_P5, GPIO_PIN3);  
+     28            //GPIO 8.0
+     29            //Inserted by student
+     30            GPIO_setAsOutputPin(GPIO_PORT_P8, GPIO_PIN0);
+     31          }
+     32          
+     33          /** 
+     34          Refresh the display
+     35          */
+     36          void refreshLedDial()
+     37          {
+     38            //Refresh lower bank (LEDs 1-4)
+     39           //Inserted by student
+     40            P2OUT&=0x7f;
+     41            P8OUT|=0x01;
+     42            P5OUT|=0x0e;
+     43            __delay_cycles(100000);  //Delay 10ms
+     44            //Refresh lower bank (LEDs 5-9)
+     45            //Inserted by student
+     46            P2OUT|=0x80;
+     47            P8OUT&=0xfe;
+     48            P5OUT&=0xf1;
+     49            __delay_cycles(100000);  //Delay 10ms
+     50          }
+     51          
+     52          /** 
+     53          Set dial value
+     54          */
+     55          void setLedDial(unsigned char value)
+     56          {
+     57            ledValue_ = value;
+     58          }
+
+   Maximum stack usage in bytes:
+
+   CSTACK Function
+   ------ --------
+      4   initialiseLedDial
+        0   -> GPIO_setAsOutputPin
+        4   -> GPIO_setAsOutputPin
+      4   refreshLedDial
+      4   setLedDial
+
+
+   Segment part sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       2  _A_PAOUT_L
+       2  _A_PCOUT_L
+       2  _A_PDOUT_L
+      48  initialiseLedDial
+       1  ledValue_
+      54  refreshLedDial
+       6  setLedDial
+
+ 
+ 108 bytes in segment CODE
+   6 bytes in segment DATA16_AN
+   1 byte  in segment DATA16_Z
+ 
+ 108 bytes of CODE memory
+   1 byte  of DATA memory (+ 6 bytes shared)
+
+Errors: none
+Warnings: none
