@@ -1,0 +1,729 @@
+###############################################################################
+#
+# IAR C/C++ Compiler V6.30.2.940/W32 for MSP430           19/Nov/2015  14:22:15
+# Copyright 1996-2015 IAR Systems AB.
+# Standalone license - IAR Embedded Workbench for Texas Instruments MSP430
+#
+#    __rt_version  =  3
+#    __double_size =  32
+#    __reg_r4      =  free
+#    __reg_r5      =  free
+#    __pic         =  no
+#    __core        =  430X
+#    __data_model  =  small
+#    __code_model  =  large
+#    Source file   =  I:\IAR\EE312\driverlib\MSP430FR2xx_4xx\cs.c
+#    Command line  =  
+#        I:\IAR\EE312\driverlib\MSP430FR2xx_4xx\cs.c -lcN
+#        I:\IAR\EE312\Lab_3\Debug\List\ -o I:\IAR\EE312\Lab_3\Debug\Obj\
+#        --no_cse --no_unroll --no_inline --no_code_motion --no_tbaa --debug
+#        -D__MSP430FR4133__ -e --double=32 --dlib_config
+#        E:\IAR-new\430\lib\dlib\dl430xlsfn.h -I I:\IAR\EE312\Lab_3\..\ -I
+#        I:\IAR\EE312\Lab_3\..\driverlib\MSP430FR2xx_4xx\ --core=430X
+#        --data_model=small -Ol --hw_workaround=CPU40 --segment __data16=DATA16
+#        --segment __data20=DATA20 --code_model=large
+#    List file     =  I:\IAR\EE312\Lab_3\Debug\List\cs.lst
+#    Object file   =  I:\IAR\EE312\Lab_3\Debug\Obj\cs.r43
+#
+###############################################################################
+
+I:\IAR\EE312\driverlib\MSP430FR2xx_4xx\cs.c
+      1          /* --COPYRIGHT--,BSD
+      2           * Copyright (c) 2014, Texas Instruments Incorporated
+      3           * All rights reserved.
+      4           *
+      5           * Redistribution and use in source and binary forms, with or without
+      6           * modification, are permitted provided that the following conditions
+      7           * are met:
+      8           *
+      9           * *  Redistributions of source code must retain the above copyright
+     10           *    notice, this list of conditions and the following disclaimer.
+     11           *
+     12           * *  Redistributions in binary form must reproduce the above copyright
+     13           *    notice, this list of conditions and the following disclaimer in the
+     14           *    documentation and/or other materials provided with the distribution.
+     15           *
+     16           * *  Neither the name of Texas Instruments Incorporated nor the names of
+     17           *    its contributors may be used to endorse or promote products derived
+     18           *    from this software without specific prior written permission.
+     19           *
+     20           * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+     21           * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+     22           * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+     23           * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+     24           * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+     25           * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+     26           * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+     27           * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+     28           * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+     29           * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+     30           * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+     31           * --/COPYRIGHT--*/
+     32          //*****************************************************************************
+     33          //
+     34          // cs.c - Driver for the cs Module.
+     35          //
+     36          //*****************************************************************************
+     37          
+     38          //*****************************************************************************
+     39          //
+     40          //! \addtogroup cs_api cs
+     41          //! @{
+     42          //
+     43          //*****************************************************************************
+     44          
+     45          #include "inc/hw_regaccess.h"
+     46          #include "inc/hw_memmap.h"
+     47          
+     48          #ifdef __MSP430_HAS_CS__
+     49          #include "cs.h"
+     50          
+     51          #include <assert.h>
+     52          
+     53          //*****************************************************************************
+     54          //
+     55          // Internal very low power VLOCLK, low frequency oscillator with 10 kHz typical
+     56          // frequency
+     57          //
+     58          //*****************************************************************************
+     59          #define CS_VLOCLK_FREQUENCY                                               10000
+     60          
+     61          //*****************************************************************************
+     62          //
+     63          // Internal, trimmed, low-frequency oscillator with 32768 Hz typical frequency
+     64          //
+     65          //*****************************************************************************
+     66          #define CS_REFOCLK_FREQUENCY                                              32768
+     67          
+     68          //******************************************************************************
+     69          //
+     70          //The XT1 crystal frequency. Should be set with CS_externalClockSourceInit
+     71          //if XT1 is used and user intends to invoke CS_getSMCLK, CS_getMCLK or
+     72          //CS_getACLK
+     73          //
+     74          //******************************************************************************
+     75          static uint32_t privateXT1ClockFrequency = 0;
+     76          
+     77          static uint32_t privateCSSourceClockFromDCO(uint16_t FLLRefCLKSource)
+     78          {
+     79              assert((SELMS__DCOCLKDIV == FLLRefCLKSource));
+     80          
+     81              uint16_t N_value;
+     82              uint16_t n_value = 1;
+     83              uint32_t Fref_value;
+     84          
+     85              N_value = (HWREG16(CS_BASE + OFS_CSCTL2)) & 0x03FF;
+     86              uint16_t tempDivider = HWREG8(CS_BASE + OFS_CSCTL3) & FLLREFDIV_7;
+     87          
+     88              if(tempDivider > 1)
+     89              {
+     90                  n_value = 32 << (tempDivider - 1);
+     91              }
+     92          
+     93              switch((HWREG8(CS_BASE + OFS_CSCTL3)) & SELREF_3)
+     94              {
+     95              case SELREF__XT1CLK:
+     96                  Fref_value = privateXT1ClockFrequency;
+     97          
+     98                  if(XTS != (HWREG16(CS_BASE + OFS_CSCTL6) & XTS))
+     99                  {
+    100                      if(HWREG8(CS_BASE + OFS_CSCTL7) & XT1OFFG)
+    101                      {
+    102                          HWREG8(CS_BASE + OFS_CSCTL7) &= ~(XT1OFFG);
+    103                          //Clear OFIFG fault flag
+    104                          HWREG8(CS_BASE + OFS_SFRIFG1) &= ~OFIFG;
+    105          
+    106                          if(HWREG8(CS_BASE + OFS_CSCTL7) & XT1OFFG)
+    107                          {
+    108                              Fref_value = CS_REFOCLK_FREQUENCY;
+    109                          }
+    110                      }
+    111                  }
+    112                  break;
+    113              case SELREF__REFOCLK:
+    114                  Fref_value = CS_REFOCLK_FREQUENCY;
+    115                  break;
+    116              default: assert(0);
+    117              }
+    118          
+    119              return (Fref_value * (N_value + 1) / n_value);
+    120          }
+    121          
+    122          static uint32_t privateCSComputeCLKFrequency(uint16_t CLKSource,
+    123                                                       uint16_t CLKSourceDivider)
+    124          {
+    125              uint32_t CLKFrequency = 0;
+    126              uint8_t CLKSourceFrequencyDivider = 1;
+    127          
+    128              CLKSourceFrequencyDivider = 1 << CLKSourceDivider;
+    129          
+    130              switch(CLKSource)
+    131              {
+    132              case SELMS__XT1CLK:
+    133                  CLKFrequency = (privateXT1ClockFrequency /
+    134                                  CLKSourceFrequencyDivider);
+    135          
+    136                  if(XTS != (HWREG16(CS_BASE + OFS_CSCTL6) & XTS))
+    137                  {
+    138                      if(HWREG8(CS_BASE + OFS_CSCTL7) & XT1OFFG)
+    139                      {
+    140                          HWREG8(CS_BASE + OFS_CSCTL7) &= ~(XT1OFFG);
+    141                          //Clear OFIFG fault flag
+    142                          HWREG8(SFR_BASE + OFS_SFRIFG1) &= ~OFIFG;
+    143          
+    144                          if(HWREG8(CS_BASE + OFS_CSCTL7) & XT1OFFG)
+    145                          {
+    146                              CLKFrequency = CS_REFOCLK_FREQUENCY;
+    147                          }
+    148                      }
+    149                  }
+    150                  break;
+    151          
+    152              case SELMS__VLOCLK:
+    153                  CLKFrequency =
+    154                      (CS_VLOCLK_FREQUENCY / CLKSourceFrequencyDivider);
+    155                  break;
+    156              case SELMS__REFOCLK:
+    157                  CLKFrequency =
+    158                      (CS_REFOCLK_FREQUENCY / CLKSourceFrequencyDivider);
+    159                  break;
+    160              case SELMS__DCOCLKDIV:
+    161                  CLKFrequency =
+    162                      privateCSSourceClockFromDCO(CLKSource)
+    163                      / CLKSourceFrequencyDivider;
+    164                  break;
+    165              }
+    166          
+    167              return (CLKFrequency);
+    168          }
+    169          
+    170          void CS_setExternalClockSource(uint32_t XT1CLK_frequency)
+    171          {
+    172              privateXT1ClockFrequency = XT1CLK_frequency;
+    173          }
+    174          
+    175          void CS_initClockSignal(uint8_t selectedClockSignal,
+    176                                  uint16_t clockSource,
+    177                                  uint16_t clockSourceDivider)
+    178          {
+    179              switch(selectedClockSignal)
+    180              {
+    181              case CS_ACLK:
+    182          
+    183                  assert(
+    184                      (CS_XT1CLK_SELECT == clockSource) ||
+    185                      (CS_REFOCLK_SELECT == clockSource)
+    186                      );
+    187                  assert(CS_CLOCK_DIVIDER_1 == clockSourceDivider);
+    188          
+    189                  HWREG16(CS_BASE + OFS_CSCTL4) &= ~(SELA);
+    190          
+    191                  if(clockSource == CS_XT1CLK_SELECT)
+    192                  {
+    193                      clockSource = 0x0;
+    194                  }
+    195                  clockSource = clockSource << 8;
+    196          
+    197                  HWREG16(CS_BASE + OFS_CSCTL4) |= (clockSource);
+    198          
+    199                  clockSourceDivider = clockSourceDivider << 8;
+    200                  break;
+    201              case CS_SMCLK:
+    202          
+    203                  assert(
+    204                      (CS_CLOCK_DIVIDER_1 == clockSourceDivider) ||
+    205                      (CS_CLOCK_DIVIDER_2 == clockSourceDivider) ||
+    206                      (CS_CLOCK_DIVIDER_4 == clockSourceDivider) ||
+    207                      (CS_CLOCK_DIVIDER_8 == clockSourceDivider)
+    208                      );
+    209                  assert(
+    210                      (CS_XT1CLK_SELECT == clockSource) ||
+    211                      (CS_VLOCLK_SELECT == clockSource) ||
+    212                      (CS_REFOCLK_SELECT == clockSource) ||
+    213                      (CS_DCOCLKDIV_SELECT == clockSource)
+    214                      );
+    215          
+    216                  HWREG16(CS_BASE + OFS_CSCTL4) &= ~(SELMS_7);
+    217                  HWREG16(CS_BASE + OFS_CSCTL4) |= (clockSource);
+    218          
+    219                  HWREG16(CS_BASE + OFS_CSCTL5) &= ~(DIVS_3);
+    220                  clockSourceDivider = clockSourceDivider << 4;
+    221                  HWREG16(CS_BASE + OFS_CSCTL5) |= clockSourceDivider;
+    222                  break;
+    223              case CS_MCLK:
+    224          
+    225                  assert(
+    226                      (CS_XT1CLK_SELECT == clockSource) ||
+    227                      (CS_VLOCLK_SELECT == clockSource) ||
+    228                      (CS_REFOCLK_SELECT == clockSource) ||
+    229                      (CS_DCOCLKDIV_SELECT == clockSource)
+    230                      );
+    231          
+    232                  assert(
+    233                      (CS_CLOCK_DIVIDER_1 == clockSourceDivider) ||
+    234                      (CS_CLOCK_DIVIDER_2 == clockSourceDivider) ||
+    235                      (CS_CLOCK_DIVIDER_4 == clockSourceDivider) ||
+    236                      (CS_CLOCK_DIVIDER_8 == clockSourceDivider) ||
+    237                      (CS_CLOCK_DIVIDER_16 == clockSourceDivider) ||
+    238                      (CS_CLOCK_DIVIDER_32 == clockSourceDivider) ||
+    239                      (CS_CLOCK_DIVIDER_64 == clockSourceDivider) ||
+    240                      (CS_CLOCK_DIVIDER_128 == clockSourceDivider)
+    241                      );
+    242          
+    243                  HWREG16(CS_BASE + OFS_CSCTL4) &= ~(SELMS_7);
+    244                  HWREG16(CS_BASE + OFS_CSCTL4) |= (clockSource);
+    245          
+    246                  HWREG16(CS_BASE + OFS_CSCTL5) &= ~(DIVM_7);
+    247                  HWREG16(CS_BASE + OFS_CSCTL5) |= clockSourceDivider;
+    248                  break;
+    249              case CS_FLLREF:
+    250                  assert((clockSourceDivider == CS_CLOCK_DIVIDER_1)  ||
+    251                         (clockSourceDivider == CS_CLOCK_DIVIDER_32)  ||
+    252                         (clockSourceDivider == CS_CLOCK_DIVIDER_64)  ||
+    253                         (clockSourceDivider == CS_CLOCK_DIVIDER_128)  ||
+    254                         (clockSourceDivider == CS_CLOCK_DIVIDER_256)   ||
+    255                         (clockSourceDivider == CS_CLOCK_DIVIDER_512)
+    256                         );
+    257                  assert(
+    258                      (CS_XT1CLK_SELECT == clockSource) ||
+    259                      (CS_REFOCLK_SELECT == clockSource)
+    260                      );
+    261          
+    262                  HWREG8(CS_BASE + OFS_CSCTL3) &= ~(SELREF_3);
+    263          
+    264                  if(clockSource == CS_XT1CLK_SELECT)
+    265                  {
+    266                      clockSource = 0x0;
+    267                  }
+    268                  clockSource = clockSource << 4;
+    269                  HWREG8(CS_BASE + OFS_CSCTL3) |= (clockSource);
+    270          
+    271                  HWREG8(CS_BASE + OFS_CSCTL3) &= ~(FLLREFDIV_7);
+    272                  //Note that dividers for FLLREF are slightly different
+    273                  //Hence handled differently from other CLK signals
+    274                  if(clockSourceDivider != CS_CLOCK_DIVIDER_1)
+    275                  {
+    276                      HWREG8(CS_BASE + OFS_CSCTL3) |= (clockSourceDivider - 4);
+    277                  }
+    278                  break;
+    279              }
+    280          }
+    281          
+    282          void CS_turnOnXT1(uint16_t xt1drive){
+    283              assert((xt1drive == CS_XT1_DRIVE_0) ||
+    284                     (xt1drive == CS_XT1_DRIVE_1) ||
+    285                     (xt1drive == CS_XT1_DRIVE_2) ||
+    286                     (xt1drive == CS_XT1_DRIVE_3));
+    287          
+    288              //Switch ON XT1 oscillator
+    289              HWREG16(CS_BASE + OFS_CSCTL6) &= ~XT1AUTOOFF;
+    290          
+    291              //Highest drive setting for turnOnXT1
+    292              HWREG16(CS_BASE + OFS_CSCTL6_L) |= XT1DRIVE1_L + XT1DRIVE0_L;
+    293          
+    294              //Enable LF mode and clear bypass
+    295              HWREG16(CS_BASE + OFS_CSCTL6) &= ~(XTS + XT1BYPASS);
+    296          
+    297              while(HWREG8(CS_BASE + OFS_CSCTL7) & XT1OFFG)
+    298              {
+    299                  //Clear OSC fault flag
+    300                  HWREG8(CS_BASE + OFS_CSCTL7) &= ~(XT1OFFG);
+    301          
+    302                  //Clear OFIFG fault flag
+    303                  HWREG8(SFR_BASE + OFS_SFRIFG1) &= ~OFIFG;
+    304              }
+    305          
+    306              //set requested Drive mode
+    307              HWREG16(CS_BASE + OFS_CSCTL6) = (HWREG16(CS_BASE + OFS_CSCTL6) &
+    308                                               ~(XT1DRIVE_3)
+    309                                               ) |
+    310                                              (xt1drive);
+    311          }
+    312          
+    313          void CS_bypassXT1(void)
+    314          {
+    315              //Enable HF/LF mode
+    316              HWREG16(CS_BASE + OFS_CSCTL6) &= ~XTS;
+    317          
+    318              //Switch OFF XT1 oscillator and enable BYPASS mode
+    319              HWREG16(CS_BASE + OFS_CSCTL6) |= (XT1BYPASS + XT1AUTOOFF);
+    320          
+    321              while(HWREG8(CS_BASE + OFS_CSCTL7) & (XT1OFFG))
+    322              {
+    323                  //Clear OSC flaut Flags fault flags
+    324                  HWREG8(CS_BASE + OFS_CSCTL7) &= ~(XT1OFFG);
+    325          
+    326                  // Clear the global fault flag. In case the XT1 caused the global fault
+    327                  // flag to get set this will clear the global error condition. If any
+    328                  // error condition persists, global flag will get again.
+    329                  HWREG8(SFR_BASE + OFS_SFRIFG1) &= ~OFIFG;
+    330              }
+    331          }
+    332          
+    333          bool CS_turnOnXT1WithTimeout(uint16_t xt1drive,
+    334                                       uint16_t timeout)
+    335          {
+    336              assert((xt1drive == CS_XT1_DRIVE_0) ||
+    337                     (xt1drive == CS_XT1_DRIVE_1) ||
+    338                     (xt1drive == CS_XT1_DRIVE_2) ||
+    339                     (xt1drive == CS_XT1_DRIVE_3));
+    340          
+    341              //Switch ON XT1 oscillator
+    342              HWREG16(CS_BASE + OFS_CSCTL6) &= ~XT1AUTOOFF;
+    343          
+    344              //Highest drive setting for turnOnXT1
+    345              HWREG16(CS_BASE + OFS_CSCTL6_L) |= XT1DRIVE1_L + XT1DRIVE0_L;
+    346          
+    347              //Enable LF mode and clear bypass
+    348              HWREG16(CS_BASE + OFS_CSCTL6) &= ~(XTS + XT1BYPASS);
+    349          
+    350              do
+    351              {
+    352                  HWREG8(CS_BASE + OFS_CSCTL7) &= ~(XT1OFFG);
+    353          
+    354                  //Clear OFIFG fault flag
+    355                  HWREG8(SFR_BASE + OFS_SFRIFG1) &= ~OFIFG;
+    356              }
+    357              while((HWREG8(CS_BASE + OFS_CSCTL7) & XT1OFFG) && --timeout);
+    358          
+    359              if(timeout)
+    360              {
+    361                  //set requested Drive mode
+    362                  HWREG16(CS_BASE + OFS_CSCTL6) = (HWREG16(CS_BASE + OFS_CSCTL6) &
+    363                                                   ~(XT1DRIVE_3)
+    364                                                   ) |
+    365                                                  (xt1drive);
+    366          
+    367                  return (STATUS_SUCCESS);
+    368              }
+    369              else
+    370              {
+    371                  return (STATUS_FAIL);
+    372              }
+    373          }
+    374          
+    375          bool CS_bypassXT1WithTimeout(uint16_t timeout)
+    376          {
+    377              //Enable HF/LF mode
+    378              HWREG16(CS_BASE + OFS_CSCTL6) &= ~XTS;
+    379          
+    380              //Switch OFF XT1 oscillator  and enable bypass
+    381              HWREG16(CS_BASE + OFS_CSCTL6) |= (XT1BYPASS + XT1AUTOOFF);
+    382          
+    383              do
+    384              {
+    385                  //Clear OSC flaut Flags fault flags
+    386                  HWREG8(CS_BASE + OFS_CSCTL7) &= ~(XT1OFFG);
+    387          
+    388                  // Clear the global fault flag. In case the XT1 caused the global fault
+    389                  // flag to get set this will clear the global error condition. If any
+    390                  // error condition persists, global flag will get again.
+    391                  HWREG8(SFR_BASE + OFS_SFRIFG1) &= ~OFIFG;
+    392              }
+    393              while((HWREG8(CS_BASE + OFS_CSCTL7) & (XT1OFFG)) && --timeout);
+    394          
+    395              if(timeout)
+    396              {
+    397                  return (STATUS_SUCCESS);
+    398              }
+    399              else
+    400              {
+    401                  return (STATUS_FAIL);
+    402              }
+    403          }
+    404          
+    405          void CS_turnOffXT1(void)
+    406          {
+    407              //Switch off XT1 oscillator
+    408              HWREG16(CS_BASE + OFS_CSCTL6) |= XT1AUTOOFF;
+    409          }
+    410          
+    411          void CS_initFLLSettle(uint16_t fsystem,
+    412                                uint16_t ratio)
+    413          {
+    414              volatile uint16_t x = ratio * 32;
+    415          
+    416              CS_initFLL(fsystem, ratio);
+    417          
+    418              while(x--)
+    419              {
+    420                  __delay_cycles(30);
+    421              }
+    422          }
+    423          
+    424          void CS_initFLL(uint16_t fsystem,
+    425                          uint16_t ratio)
+    426          {
+    427              uint16_t dco_FLLN, dco_FLLD = FLLD__1;
+    428          
+    429              //Save actual state of FLL loop control, then disable it. This is needed to
+    430              //prevent the FLL from acting as we are making fundamental modifications to
+    431              //the clock setup.
+    432              uint16_t srRegisterState = __get_SR_register() & SCG0;
+    433          
+    434              //Have at least a divider of 2
+    435              dco_FLLN = ratio;
+    436          
+    437              //Max DCODIV freq <=16MHz
+    438              assert (fsystem <= 16000);
+    439              assert (dco_FLLN <= 488);
+    440          
+    441              // Disable FLL
+    442              __bis_SR_register(SCG0);
+    443          
+    444              //Set DCO to lowest Tap
+    445              HWREG16(CS_BASE + OFS_CSCTL0) &= ~(DCO8 +
+    446                                                 DCO7 +
+    447                                                 DCO6 +
+    448                                                 DCO5 +
+    449                                                 DCO4 +
+    450                                                 DCO3 +
+    451                                                 DCO2 +
+    452                                                 DCO1 +
+    453                                                 DCO0
+    454                                                 );
+    455          
+    456              //Reset FN bits
+    457              HWREG16(CS_BASE + OFS_CSCTL2) &= ~(0x03FF);
+    458              HWREG16(CS_BASE + OFS_CSCTL2) = dco_FLLD | (dco_FLLN - 1);
+    459          
+    460              HWREG8(CS_BASE + OFS_CSCTL1) &= ~DCORSEL_7;
+    461              if(fsystem <= 1000)             //fsystem <= 1MHz
+    462              {
+    463                  HWREG8(CS_BASE + OFS_CSCTL1) |= DCORSEL_0;
+    464              }
+    465              else if(fsystem <= 2000)         //1MHz < fsystem <= 2MHz
+    466              {
+    467                  HWREG8(CS_BASE + OFS_CSCTL1) |= DCORSEL_1;
+    468              }
+    469              else if(fsystem <= 4000)         //2MHz < fsystem <=  4MHz
+    470              {
+    471                  HWREG8(CS_BASE + OFS_CSCTL1) |= DCORSEL_2;
+    472              }
+    473              else if(fsystem <= 8000)         //4MHz  < fsystem <=  8MHz
+    474              {
+    475                  HWREG8(CS_BASE + OFS_CSCTL1) |= DCORSEL_3;
+    476              }
+    477              else if(fsystem <= 12000)        //8MHz    < fsystem <= 12MHz
+    478              {
+    479                  HWREG8(CS_BASE + OFS_CSCTL1) |= DCORSEL_4;
+    480              }
+    481              else if(fsystem <= 16000)        //12MHz   < fsystem <=  16MHz
+    482              {
+    483                  HWREG8(CS_BASE + OFS_CSCTL1) |= DCORSEL_5;
+    484              }
+    485              else
+    486              {
+    487                  //exceeds 16MHz, not supported
+    488                  assert(0);
+    489              }
+    490          
+    491              // Re-enable FLL
+    492              __bic_SR_register(SCG0);
+    493          
+    494              while(HWREG8(CS_BASE + OFS_CSCTL7_L) & DCOFFG)
+    495              {
+    496                  //Clear OSC flaut Flags
+    497                  HWREG8(CS_BASE + OFS_CSCTL7_L) &= ~(DCOFFG);
+    498          
+    499                  //Clear OFIFG fault flag
+    500                  HWREG8(SFR_BASE + OFS_SFRIFG1) &= ~OFIFG;
+    501              }
+    502          
+    503              // Restore previous SCG0
+    504              __bis_SR_register(srRegisterState);
+    505          }
+    506          
+    507          void CS_enableClockRequest(uint8_t selectClock)
+    508          {
+    509              HWREG8(CS_BASE + OFS_CSCTL8) |= selectClock;
+    510          }
+    511          
+    512          void CS_disableClockRequest(uint8_t selectClock)
+    513          {
+    514              HWREG8(CS_BASE + OFS_CSCTL8) &= ~selectClock;
+    515          }
+    516          
+    517          uint8_t CS_getFaultFlagStatus(uint8_t mask)
+    518          {
+    519              return (HWREG8(CS_BASE + OFS_CSCTL7) & mask);
+    520          }
+    521          
+    522          void CS_clearFaultFlag(uint8_t mask)
+    523          {
+    524              HWREG8(CS_BASE + OFS_CSCTL7) &= ~mask;
+    525          }
+    526          
+    527          uint32_t CS_getACLK(void)
+    528          {
+    529              //Find ACLK source
+    530              uint16_t ACLKSource = (HWREG16(CS_BASE + OFS_CSCTL4) & SELA);
+    531          
+    532              ACLKSource = ACLKSource >> 8;
+    533          
+    534              if(ACLKSource == 0x0)
+    535              {
+    536                  ACLKSource = SELMS__XT1CLK;
+    537              }
+    538              else
+    539              {
+    540                  ACLKSource = SELMS__REFOCLK;
+    541              }
+    542          
+    543              uint16_t ACLKSourceDivider = 1;
+    544              ACLKSourceDivider = ACLKSourceDivider >> 8;
+    545          
+    546              return (privateCSComputeCLKFrequency(
+    547                          ACLKSource,
+    548                          ACLKSourceDivider)
+    549                      );
+    550          }
+    551          
+    552          uint32_t CS_getSMCLK(void)
+    553          {
+    554              uint16_t SMCLKSource = HWREG8(CS_BASE + OFS_CSCTL4_L) & SELMS_7;
+    555          
+    556              uint16_t SMCLKSourceDivider =
+    557                  HWREG16(CS_BASE + OFS_CSCTL5) & DIVS_3;
+    558              SMCLKSourceDivider = SMCLKSourceDivider >> 4;
+    559          
+    560              return (privateCSComputeCLKFrequency(
+    561                          SMCLKSource,
+    562                          SMCLKSourceDivider)
+    563                      );
+    564          }
+    565          
+    566          uint32_t CS_getMCLK(void)
+    567          {
+    568              //Find AMCLK source
+    569              uint16_t MCLKSource = (HWREG16(CS_BASE + OFS_CSCTL4) & SELMS_7);
+    570          
+    571              uint16_t MCLKSourceDivider = HWREG16(CS_BASE + OFS_CSCTL5) & DIVM_7;
+    572          
+    573              return (privateCSComputeCLKFrequency(
+    574                          MCLKSource,
+    575                          MCLKSourceDivider)
+    576                      );
+    577          }
+    578          
+    579          uint16_t CS_clearAllOscFlagsWithTimeout(uint16_t timeout){
+    580              do
+    581              {
+    582                  // Clear all osc fault flags
+    583                  HWREG8(CS_BASE + OFS_CSCTL7) &= ~(DCOFFG + XT1OFFG);
+    584          
+    585                  // Clear the global osc fault flag.
+    586                  HWREG8(SFR_BASE + OFS_SFRIFG1) &= ~OFIFG;
+    587          
+    588                  // Check XT1 fault flags
+    589              }
+    590              while((HWREG8(SFR_BASE + OFS_SFRIFG1) & OFIFG) && --timeout);
+    591          
+    592              return (HWREG8(CS_BASE + OFS_CSCTL7) & (DCOFFG + XT1OFFG));
+    593          }
+    594          
+    595          void CS_enableXT1AutomaticGainControl(void)
+    596          {
+    597              HWREG16(CS_BASE + OFS_CSCTL6) &= ~XT1AGCOFF;
+    598          }
+    599          
+    600          void CS_disableXT1AutomaticGainControl(void)
+    601          {
+    602              HWREG16(CS_BASE + OFS_CSCTL6) |= XT1AGCOFF;
+    603          }
+    604          
+    605          void CS_enableFLLUnlock(void)
+    606          {
+    607              HWREG16(CS_BASE + OFS_CSCTL7) |= FLLULPUC;
+    608          }
+    609          
+    610          void CS_disableFLLUnlock(void)
+    611          {
+    612              HWREG16(CS_BASE + OFS_CSCTL7) &= ~FLLULPUC;
+    613          }
+    614          
+    615          #endif
+    616          //*****************************************************************************
+    617          //
+    618          //! Close the doxygen group for cs_api
+    619          //! @}
+    620          //
+    621          //*****************************************************************************
+
+   Maximum stack usage in bytes:
+
+   CSTACK Function
+   ------ --------
+      4   CS_bypassXT1
+      4   CS_bypassXT1WithTimeout
+      4   CS_clearAllOscFlagsWithTimeout
+      4   CS_clearFaultFlag
+      4   CS_disableClockRequest
+      4   CS_disableFLLUnlock
+      4   CS_disableXT1AutomaticGainControl
+      4   CS_enableClockRequest
+      4   CS_enableFLLUnlock
+      4   CS_enableXT1AutomaticGainControl
+      4   CS_getACLK
+        0   -> privateCSComputeCLKFrequency
+      4   CS_getFaultFlagStatus
+      4   CS_getMCLK
+        0   -> privateCSComputeCLKFrequency
+      4   CS_getSMCLK
+        0   -> privateCSComputeCLKFrequency
+      4   CS_initClockSignal
+      4   CS_initFLL
+      6   CS_initFLLSettle
+        6   -> CS_initFLL
+      4   CS_setExternalClockSource
+      4   CS_turnOffXT1
+      4   CS_turnOnXT1
+      4   CS_turnOnXT1WithTimeout
+      8   privateCSComputeCLKFrequency
+        8   -> privateCSSourceClockFromDCO
+        8 ?DivMod16s
+        8 ?DivMod16u
+        8 ?DivMod32u
+      6   privateCSSourceClockFromDCO
+        6 ?DivMod32u
+        6 ?Mul32
+
+
+   Segment part sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+      30  CS_bypassXT1
+      44  CS_bypassXT1WithTimeout
+      34  CS_clearAllOscFlagsWithTimeout
+       6  CS_clearFaultFlag
+       6  CS_disableClockRequest
+       8  CS_disableFLLUnlock
+       6  CS_disableXT1AutomaticGainControl
+       6  CS_enableClockRequest
+       8  CS_enableFLLUnlock
+       6  CS_enableXT1AutomaticGainControl
+      36  CS_getACLK
+       6  CS_getFaultFlagStatus
+      20  CS_getMCLK
+      24  CS_getSMCLK
+     132  CS_initClockSignal
+     140  CS_initFLL
+      46  CS_initFLLSettle
+      10  CS_setExternalClockSource
+       6  CS_turnOffXT1
+      48  CS_turnOnXT1
+      62  CS_turnOnXT1WithTimeout
+     150  privateCSComputeCLKFrequency
+     132  privateCSSourceClockFromDCO
+       4  privateXT1ClockFrequency
+
+ 
+ 966 bytes in segment CODE
+   4 bytes in segment DATA16_Z
+ 
+ 966 bytes of CODE memory
+   4 bytes of DATA memory
+
+Errors: none
+Warnings: none

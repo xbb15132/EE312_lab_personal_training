@@ -1,0 +1,169 @@
+###############################################################################
+#
+# IAR C/C++ Compiler V6.30.2.940/W32 for MSP430           19/Nov/2015  14:22:15
+# Copyright 1996-2015 IAR Systems AB.
+# Standalone license - IAR Embedded Workbench for Texas Instruments MSP430
+#
+#    __rt_version  =  3
+#    __double_size =  32
+#    __reg_r4      =  free
+#    __reg_r5      =  free
+#    __pic         =  no
+#    __core        =  430X
+#    __data_model  =  small
+#    __code_model  =  large
+#    Source file   =  I:\IAR\EE312\driverlib\MSP430FR2xx_4xx\crc.c
+#    Command line  =  
+#        I:\IAR\EE312\driverlib\MSP430FR2xx_4xx\crc.c -lcN
+#        I:\IAR\EE312\Lab_3\Debug\List\ -o I:\IAR\EE312\Lab_3\Debug\Obj\
+#        --no_cse --no_unroll --no_inline --no_code_motion --no_tbaa --debug
+#        -D__MSP430FR4133__ -e --double=32 --dlib_config
+#        E:\IAR-new\430\lib\dlib\dl430xlsfn.h -I I:\IAR\EE312\Lab_3\..\ -I
+#        I:\IAR\EE312\Lab_3\..\driverlib\MSP430FR2xx_4xx\ --core=430X
+#        --data_model=small -Ol --hw_workaround=CPU40 --segment __data16=DATA16
+#        --segment __data20=DATA20 --code_model=large
+#    List file     =  I:\IAR\EE312\Lab_3\Debug\List\crc.lst
+#    Object file   =  I:\IAR\EE312\Lab_3\Debug\Obj\crc.r43
+#
+###############################################################################
+
+I:\IAR\EE312\driverlib\MSP430FR2xx_4xx\crc.c
+      1          /* --COPYRIGHT--,BSD
+      2           * Copyright (c) 2014, Texas Instruments Incorporated
+      3           * All rights reserved.
+      4           *
+      5           * Redistribution and use in source and binary forms, with or without
+      6           * modification, are permitted provided that the following conditions
+      7           * are met:
+      8           *
+      9           * *  Redistributions of source code must retain the above copyright
+     10           *    notice, this list of conditions and the following disclaimer.
+     11           *
+     12           * *  Redistributions in binary form must reproduce the above copyright
+     13           *    notice, this list of conditions and the following disclaimer in the
+     14           *    documentation and/or other materials provided with the distribution.
+     15           *
+     16           * *  Neither the name of Texas Instruments Incorporated nor the names of
+     17           *    its contributors may be used to endorse or promote products derived
+     18           *    from this software without specific prior written permission.
+     19           *
+     20           * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+     21           * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+     22           * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+     23           * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+     24           * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+     25           * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+     26           * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+     27           * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+     28           * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+     29           * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+     30           * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+     31           * --/COPYRIGHT--*/
+     32          //*****************************************************************************
+     33          //
+     34          // crc.c - Driver for the crc Module.
+     35          //
+     36          //*****************************************************************************
+     37          
+     38          //*****************************************************************************
+     39          //
+     40          //! \addtogroup crc_api crc
+     41          //! @{
+     42          //
+     43          //*****************************************************************************
+     44          
+     45          #include "inc/hw_regaccess.h"
+     46          #include "inc/hw_memmap.h"
+     47          
+     48          #ifdef __MSP430_HAS_CRC__
+     49          #include "crc.h"
+     50          
+     51          #include <assert.h>
+     52          
+     53          void CRC_setSeed(uint16_t baseAddress,
+     54                           uint16_t seed)
+     55          {
+     56              HWREG16(baseAddress + OFS_CRCINIRES) = seed;
+     57          }
+     58          
+     59          void CRC_set16BitData(uint16_t baseAddress,
+     60                                uint16_t dataIn)
+     61          {
+     62              HWREG16(baseAddress + OFS_CRCDI) = dataIn;
+     63          }
+     64          
+     65          void CRC_set8BitData(uint16_t baseAddress,
+     66                               uint8_t dataIn)
+     67          {
+     68              HWREG8(baseAddress + OFS_CRCDI_L) = dataIn;
+     69          }
+     70          
+     71          void CRC_set16BitDataReversed(uint16_t baseAddress,
+     72                                        uint16_t dataIn)
+     73          {
+     74              HWREG16(baseAddress + OFS_CRCDIRB) = dataIn;
+     75          }
+     76          
+     77          void CRC_set8BitDataReversed(uint16_t baseAddress,
+     78                                       uint8_t dataIn)
+     79          {
+     80              HWREG8(baseAddress + OFS_CRCDIRB_L) = dataIn;
+     81          }
+     82          
+     83          uint16_t CRC_getData(uint16_t baseAddress)
+     84          {
+     85              return (HWREG16(baseAddress + OFS_CRCDI));
+     86          }
+     87          
+     88          uint16_t CRC_getResult(uint16_t baseAddress)
+     89          {
+     90              return (HWREG16(baseAddress + OFS_CRCINIRES));
+     91          }
+     92          
+     93          uint16_t CRC_getResultBitsReversed(uint16_t baseAddress)
+     94          {
+     95              return (HWREG16(baseAddress + OFS_CRCRESR));
+     96          }
+     97          
+     98          #endif
+     99          //*****************************************************************************
+    100          //
+    101          //! Close the doxygen group for crc_api
+    102          //! @}
+    103          //
+    104          //*****************************************************************************
+
+   Maximum stack usage in bytes:
+
+   CSTACK Function
+   ------ --------
+      4   CRC_getData
+      4   CRC_getResult
+      4   CRC_getResultBitsReversed
+      4   CRC_set16BitData
+      4   CRC_set16BitDataReversed
+      4   CRC_set8BitData
+      4   CRC_set8BitDataReversed
+      4   CRC_setSeed
+
+
+   Segment part sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  CRC_getData
+       6  CRC_getResult
+       8  CRC_getResultBitsReversed
+       6  CRC_set16BitData
+       8  CRC_set16BitDataReversed
+       6  CRC_set8BitData
+       8  CRC_set8BitDataReversed
+       8  CRC_setSeed
+
+ 
+ 54 bytes in segment CODE
+ 
+ 54 bytes of CODE memory
+
+Errors: none
+Warnings: none

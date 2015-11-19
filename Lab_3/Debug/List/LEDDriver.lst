@@ -1,0 +1,183 @@
+###############################################################################
+#
+# IAR C/C++ Compiler V6.30.2.940/W32 for MSP430           19/Nov/2015  14:22:16
+# Copyright 1996-2015 IAR Systems AB.
+# Standalone license - IAR Embedded Workbench for Texas Instruments MSP430
+#
+#    __rt_version  =  3
+#    __double_size =  32
+#    __reg_r4      =  free
+#    __reg_r5      =  free
+#    __pic         =  no
+#    __core        =  430X
+#    __data_model  =  small
+#    __code_model  =  large
+#    Source file   =  I:\IAR\EE312\Lab_3\LEDDriver.c
+#    Command line  =  
+#        I:\IAR\EE312\Lab_3\LEDDriver.c -lcN I:\IAR\EE312\Lab_3\Debug\List\ -o
+#        I:\IAR\EE312\Lab_3\Debug\Obj\ --no_cse --no_unroll --no_inline
+#        --no_code_motion --no_tbaa --debug -D__MSP430FR4133__ -e --double=32
+#        --dlib_config E:\IAR-new\430\lib\dlib\dl430xlsfn.h -I
+#        I:\IAR\EE312\Lab_3\..\ -I
+#        I:\IAR\EE312\Lab_3\..\driverlib\MSP430FR2xx_4xx\ --core=430X
+#        --data_model=small -Ol --hw_workaround=CPU40 --segment __data16=DATA16
+#        --segment __data20=DATA20 --code_model=large
+#    List file     =  I:\IAR\EE312\Lab_3\Debug\List\LEDDriver.lst
+#    Object file   =  I:\IAR\EE312\Lab_3\Debug\Obj\LEDDriver.r43
+#
+###############################################################################
+
+I:\IAR\EE312\Lab_3\LEDDriver.c
+      1          /**************************************************
+      2           * LEDDriver.c
+      3           * Drives LED display
+      4           *
+      5           * Copyright 2015 University of Strathclyde
+      6           *
+      7           *
+      8           **************************************************/
+      9          
+     10          #include "LedDriver.h"
+     11          
+     12          //Current dial value
+     13          unsigned char ledValue_ = 0;
+     14          
+     15          /**
+     16          Initialise LED Dial, setting GPIO parameters
+     17          */
+     18          void initialiseLedDial()
+     19          {
+     20            //GPIO 2.7
+     21            GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN7);
+     22              
+     23            //GPIO 5.1, 5.2, 5.3
+     24            //Inserted by student
+     25            GPIO_setAsOutputPin(GPIO_PORT_P5, GPIO_PIN1);
+     26            GPIO_setAsOutputPin(GPIO_PORT_P5, GPIO_PIN2);
+     27            GPIO_setAsOutputPin(GPIO_PORT_P5, GPIO_PIN3);  
+     28            //GPIO 8.0
+     29            //Inserted by student
+     30            GPIO_setAsOutputPin(GPIO_PORT_P8, GPIO_PIN0);
+     31          }
+     32          
+     33          /*
+     34          enable interrupt
+     35          */
+     36          void _enable_interrupt()
+     37          {
+     38            GPIO_selectInterruptEdge(GPIO_PORT_P1,GPIO_PIN3,GPIO_LOW_TO_HIGH_TRANSITION);
+     39            GPIO_setAsInputPinWithPullUpResistor(GPIO_PORT_P1,GPIO_PIN3);
+     40            GPIO_clearInterrupt(GPIO_PORT_P1,GPIO_PIN3);
+     41            GPIO_enableInterrupt(GPIO_PORT_P1,GPIO_PIN3);
+     42          }
+     43          
+     44          /** 
+     45          Refresh the display
+     46          */
+     47          void refreshLedDial()
+     48          {
+     49            //Refresh lower bank (LEDs 1-4)
+     50           //Inserted by student
+     51           if(ledValue_==0x01)
+     52           { 
+     53             P2OUT&=0x7f;   
+     54             P8OUT|=0x01;
+     55             P5OUT&=0xf1;
+     56           }  //light LED1
+     57           if(ledValue_==0x02) 
+     58           { 
+     59             P2OUT&=0x7f;
+     60             P8OUT&=0xfe;
+     61             P5OUT|=0x02;
+     62           }  //light LED2
+     63           if(ledValue_==0x04)
+     64           {
+     65             P2OUT&=0x7f;
+     66             P8OUT&=0xfe;
+     67             P5OUT|=0x04;
+     68           }  //light LED3
+     69           if(ledValue_==0x08)
+     70           {  
+     71             P2OUT&=0x7f;
+     72             P8OUT&=0xfe;
+     73             P5OUT|=0x08;
+     74           }  //light LED4
+     75            //Refresh lower bank (LEDs 5-9)
+     76            //Inserted by student
+     77           if(ledValue_==0x10)
+     78           {
+     79             P2OUT|=0x80;
+     80             P8OUT&=0xfe;
+     81             P5OUT|=0x0e;
+     82           }  //light LED5
+     83           if(ledValue_==0x20)
+     84           {
+     85             P2OUT|=0x80;
+     86             P8OUT|=0x01;
+     87             P5OUT=0x06; 
+     88           } //light LED6
+     89           if(ledValue_==0x40)
+     90           {
+     91             P2OUT|=0x80;
+     92             P8OUT|=0x01;
+     93             P5OUT=0x0a;
+     94           }  //light LED7
+     95           if(ledValue_==0x80)
+     96           {
+     97             P2OUT|=0x80;
+     98             P8OUT|=0x01;
+     99             P5OUT=0x0c; 
+    100           } //light LED8
+    101            __delay_cycles(100000);  //Delay 10ms
+    102           P2OUT&=0x7f;
+    103           P8OUT&=0xfe;
+    104           P5OUT&=0xf1;  //turn off all LEDS
+    105          }
+    106          
+    107          /** 
+    108          Set dial value
+    109          */
+    110          void setLedDial(unsigned char value)
+    111          {
+    112            ledValue_ = value;
+    113          }
+
+   Maximum stack usage in bytes:
+
+   CSTACK Function
+   ------ --------
+      4   _enable_interrupt
+        4   -> GPIO_clearInterrupt
+        0   -> GPIO_enableInterrupt
+        4   -> GPIO_selectInterruptEdge
+        4   -> GPIO_setAsInputPinWithPullUpResistor
+      4   initialiseLedDial
+        0   -> GPIO_setAsOutputPin
+        4   -> GPIO_setAsOutputPin
+      4   refreshLedDial
+      4   setLedDial
+
+
+   Segment part sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       2  _A_PAOUT_L
+       2  _A_PCOUT_L
+       2  _A_PDOUT_L
+      34  _enable_interrupt
+      48  initialiseLedDial
+       1  ledValue_
+     206  refreshLedDial
+       6  setLedDial
+
+ 
+ 294 bytes in segment CODE
+   6 bytes in segment DATA16_AN
+   1 byte  in segment DATA16_Z
+ 
+ 294 bytes of CODE memory
+   1 byte  of DATA memory (+ 6 bytes shared)
+
+Errors: none
+Warnings: none

@@ -1,0 +1,135 @@
+###############################################################################
+#
+# IAR C/C++ Compiler V6.30.2.940/W32 for MSP430           19/Nov/2015  14:22:16
+# Copyright 1996-2015 IAR Systems AB.
+# Standalone license - IAR Embedded Workbench for Texas Instruments MSP430
+#
+#    __rt_version  =  3
+#    __double_size =  32
+#    __reg_r4      =  free
+#    __reg_r5      =  free
+#    __pic         =  no
+#    __core        =  430X
+#    __data_model  =  small
+#    __code_model  =  large
+#    Source file   =  I:\IAR\EE312\Lab_3\main.c
+#    Command line  =  
+#        I:\IAR\EE312\Lab_3\main.c -lcN I:\IAR\EE312\Lab_3\Debug\List\ -o
+#        I:\IAR\EE312\Lab_3\Debug\Obj\ --no_cse --no_unroll --no_inline
+#        --no_code_motion --no_tbaa --debug -D__MSP430FR4133__ -e --double=32
+#        --dlib_config E:\IAR-new\430\lib\dlib\dl430xlsfn.h -I
+#        I:\IAR\EE312\Lab_3\..\ -I
+#        I:\IAR\EE312\Lab_3\..\driverlib\MSP430FR2xx_4xx\ --core=430X
+#        --data_model=small -Ol --hw_workaround=CPU40 --segment __data16=DATA16
+#        --segment __data20=DATA20 --code_model=large
+#    List file     =  I:\IAR\EE312\Lab_3\Debug\List\main.lst
+#    Object file   =  I:\IAR\EE312\Lab_3\Debug\Obj\main.r43
+#
+###############################################################################
+
+I:\IAR\EE312\Lab_3\main.c
+      1          #include <msp430.h>
+      2          #include <driverlib.h>
+      3          #include "LEDDriver.h"
+      4          
+      5          unsigned int k=1;
+      6          int main(void)
+      7          {
+      8            //Default MCLK = 1MHz
+      9            
+     10            unsigned int i = 0;
+     11            unsigned char dialValue = 0x01;
+     12            WDTCTL = WDTPW | WDTHOLD;               // Stop watchdog timer
+     13            
+     14            initialiseLedDial();
+     15            _enable_interrupt();
+     16            // Disable the GPIO power-on default high-impedance mode
+     17            // to activate previously configured port settings
+     18            PMM_unlockLPM5();
+     19            
+     20            unsigned int j;
+     21            //S=1;
+     22            while(1)
+     23            {
+     24                dialValue = dialValue * 0x02;
+     25                if(0x00 == dialValue)
+     26                   dialValue = 0x01;
+     27              
+     28              //Set value
+     29                if(k==1)
+     30                {  
+     31                  for(j=0;j<8;j++)
+     32                  { 
+     33                    if(0x00 == dialValue)
+     34                      dialValue = 0x01;
+     35                    setLedDial(dialValue);
+     36                    dialValue=dialValue<<1;
+     37                  //Refresh display (10 times for each position)
+     38                  for(i = 0; i < 10; i++)
+     39                    refreshLedDial();
+     40                  }
+     41                 
+     42                }
+     43                else
+     44                {
+     45                  if(0x00 == dialValue)
+     46                    dialValue=0x80;
+     47                  for(j=0;j<8;j++)
+     48                  {
+     49                    setLedDial(dialValue);
+     50                    dialValue=dialValue>>1;
+     51                  //Refresh display (10 times for each position)
+     52                  for(i = 0; i < 10; i++)
+     53                    refreshLedDial();
+     54                 }
+     55                }
+     56            }
+     57           
+     58          }
+     59          #pragma vector=PORT1_VECTOR
+     60            __interrupt void P1_ISR(void)
+     61            {
+     62              //SW_interruptFlag_=1; //set flag
+     63              k=-k;
+     64              GPIO_clearInterrupt(GPIO_PORT_P1,GPIO_PIN3);
+     65            }
+
+   Maximum stack usage in bytes:
+
+   CSTACK Function
+   ------ --------
+     12   P1_ISR
+       12   -> GPIO_clearInterrupt
+     12   main
+       12   -> PMM_unlockLPM5
+       12   -> _enable_interrupt
+       12   -> initialiseLedDial
+       12   -> refreshLedDial
+       12   -> setLedDial
+
+
+   Segment part sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       2  ?<Initializer for k>
+      26  P1_ISR
+       2  P1_ISR::??INTVEC 94
+       2  _A_WDTCTL_L
+       2  k
+     124  main
+
+ 
+ 124 bytes in segment CODE
+   2 bytes in segment DATA16_AN
+   2 bytes in segment DATA16_I
+   2 bytes in segment DATA16_ID
+   2 bytes in segment INTVEC
+  26 bytes in segment ISR_CODE
+ 
+ 150 bytes of CODE  memory
+   2 bytes of CONST memory (+ 2 bytes shared)
+   2 bytes of DATA  memory (+ 2 bytes shared)
+
+Errors: none
+Warnings: none

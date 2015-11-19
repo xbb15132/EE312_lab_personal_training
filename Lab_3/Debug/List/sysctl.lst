@@ -1,0 +1,299 @@
+###############################################################################
+#
+# IAR C/C++ Compiler V6.30.2.940/W32 for MSP430           19/Nov/2015  14:22:16
+# Copyright 1996-2015 IAR Systems AB.
+# Standalone license - IAR Embedded Workbench for Texas Instruments MSP430
+#
+#    __rt_version  =  3
+#    __double_size =  32
+#    __reg_r4      =  free
+#    __reg_r5      =  free
+#    __pic         =  no
+#    __core        =  430X
+#    __data_model  =  small
+#    __code_model  =  large
+#    Source file   =  I:\IAR\EE312\driverlib\MSP430FR2xx_4xx\sysctl.c
+#    Command line  =  
+#        I:\IAR\EE312\driverlib\MSP430FR2xx_4xx\sysctl.c -lcN
+#        I:\IAR\EE312\Lab_3\Debug\List\ -o I:\IAR\EE312\Lab_3\Debug\Obj\
+#        --no_cse --no_unroll --no_inline --no_code_motion --no_tbaa --debug
+#        -D__MSP430FR4133__ -e --double=32 --dlib_config
+#        E:\IAR-new\430\lib\dlib\dl430xlsfn.h -I I:\IAR\EE312\Lab_3\..\ -I
+#        I:\IAR\EE312\Lab_3\..\driverlib\MSP430FR2xx_4xx\ --core=430X
+#        --data_model=small -Ol --hw_workaround=CPU40 --segment __data16=DATA16
+#        --segment __data20=DATA20 --code_model=large
+#    List file     =  I:\IAR\EE312\Lab_3\Debug\List\sysctl.lst
+#    Object file   =  I:\IAR\EE312\Lab_3\Debug\Obj\sysctl.r43
+#
+###############################################################################
+
+I:\IAR\EE312\driverlib\MSP430FR2xx_4xx\sysctl.c
+      1          /* --COPYRIGHT--,BSD
+      2           * Copyright (c) 2014, Texas Instruments Incorporated
+      3           * All rights reserved.
+      4           *
+      5           * Redistribution and use in source and binary forms, with or without
+      6           * modification, are permitted provided that the following conditions
+      7           * are met:
+      8           *
+      9           * *  Redistributions of source code must retain the above copyright
+     10           *    notice, this list of conditions and the following disclaimer.
+     11           *
+     12           * *  Redistributions in binary form must reproduce the above copyright
+     13           *    notice, this list of conditions and the following disclaimer in the
+     14           *    documentation and/or other materials provided with the distribution.
+     15           *
+     16           * *  Neither the name of Texas Instruments Incorporated nor the names of
+     17           *    its contributors may be used to endorse or promote products derived
+     18           *    from this software without specific prior written permission.
+     19           *
+     20           * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+     21           * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+     22           * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+     23           * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+     24           * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+     25           * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+     26           * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+     27           * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+     28           * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+     29           * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+     30           * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+     31           * --/COPYRIGHT--*/
+     32          //*****************************************************************************
+     33          //
+     34          // sysctl.c - Driver for the sysctl Module.
+     35          //
+     36          //*****************************************************************************
+     37          
+     38          //*****************************************************************************
+     39          //
+     40          //! \addtogroup sysctl_api sysctl
+     41          //! @{
+     42          //
+     43          //*****************************************************************************
+     44          
+     45          #include "inc/hw_regaccess.h"
+     46          #include "inc/hw_memmap.h"
+     47          
+     48          #ifdef __MSP430_HAS_SYS__
+     49          #include "sysctl.h"
+     50          
+     51          #include <assert.h>
+     52          
+     53          void SysCtl_enableDedicatedJTAGPins(void)
+     54          {
+     55              HWREG8(SYS_BASE + OFS_SYSCTL_L) |= SYSJTAGPIN;
+     56          }
+     57          
+     58          uint8_t SysCtl_getBSLEntryIndication(void)
+     59          {
+     60              if(HWREG8(SYS_BASE + OFS_SYSCTL_L) & SYSBSLIND)
+     61              {
+     62                  return (SYSCTL_BSLENTRY_INDICATED);
+     63              }
+     64              else
+     65              {
+     66                  return (SYSCTL_BSLENTRY_NOTINDICATED);
+     67              }
+     68          }
+     69          
+     70          void SysCtl_enablePMMAccessProtect(void)
+     71          {
+     72              HWREG8(SYS_BASE + OFS_SYSCTL_L) |= SYSPMMPE;
+     73          }
+     74          
+     75          void SysCtl_enableRAMBasedInterruptVectors(void)
+     76          {
+     77              HWREG8(SYS_BASE + OFS_SYSCTL_L) |= SYSRIVECT;
+     78          }
+     79          
+     80          void SysCtl_disableRAMBasedInterruptVectors(void)
+     81          {
+     82              HWREG8(SYS_BASE + OFS_SYSCTL_L) &= ~(SYSRIVECT);
+     83          }
+     84          
+     85          void SysCtl_enableBSLProtect(void)
+     86          {
+     87              HWREG16(SYS_BASE + OFS_SYSBSLC) |= SYSBSLPE;
+     88          }
+     89          
+     90          void SysCtl_disableBSLProtect(void)
+     91          {
+     92              HWREG16(SYS_BASE + OFS_SYSBSLC) &= ~(SYSBSLPE);
+     93          }
+     94          
+     95          void SysCtl_enableBSLMemory(void)
+     96          {
+     97              HWREG16(SYS_BASE + OFS_SYSBSLC) &= ~(SYSBSLOFF);
+     98          }
+     99          
+    100          void SysCtl_disableBSLMemory(void)
+    101          {
+    102              HWREG16(SYS_BASE + OFS_SYSBSLC) |= SYSBSLOFF;
+    103          }
+    104          
+    105          void SysCtl_setRAMAssignedToBSL(uint8_t BSLRAMAssignment)
+    106          {
+    107              HWREG8(SYS_BASE + OFS_SYSBSLC_L) &= ~(SYSBSLR);
+    108              HWREG8(SYS_BASE + OFS_SYSBSLC_L) |= BSLRAMAssignment;
+    109          }
+    110          
+    111          void SysCtl_initJTAGMailbox(uint8_t mailboxSizeSelect,
+    112                                      uint8_t autoClearInboxFlagSelect)
+    113          {
+    114              HWREG8(SYS_BASE + OFS_SYSJMBC_L) &= ~(JMBCLR1OFF + JMBCLR0OFF + JMBMODE);
+    115              HWREG8(SYS_BASE + OFS_SYSJMBC_L) |=
+    116                  mailboxSizeSelect + autoClearInboxFlagSelect;
+    117          }
+    118          
+    119          uint8_t SysCtl_getJTAGMailboxFlagStatus(uint8_t mailboxFlagMask)
+    120          {
+    121              return (HWREG8(SYS_BASE + OFS_SYSJMBC_L) & mailboxFlagMask);
+    122          }
+    123          
+    124          void SysCtl_clearJTAGMailboxFlagStatus(uint8_t mailboxFlagMask)
+    125          {
+    126              HWREG8(SYS_BASE + OFS_SYSJMBC_L) &= ~(mailboxFlagMask);
+    127          }
+    128          
+    129          uint16_t SysCtl_getJTAGInboxMessage16Bit(uint8_t inboxSelect)
+    130          {
+    131              return (HWREG16(SYS_BASE + OFS_SYSJMBI0 + inboxSelect));
+    132          }
+    133          
+    134          uint32_t SysCtl_getJTAGInboxMessage32Bit(void)
+    135          {
+    136              uint32_t JTAGInboxMessageLow = HWREG16(SYS_BASE + OFS_SYSJMBI0);
+    137              uint32_t JTAGInboxMessageHigh = HWREG16(SYS_BASE + OFS_SYSJMBI1);
+    138          
+    139              return ((JTAGInboxMessageHigh << 16) + JTAGInboxMessageLow);
+    140          }
+    141          
+    142          void SysCtl_setJTAGOutgoingMessage16Bit(uint8_t outboxSelect,
+    143                                                  uint16_t outgoingMessage)
+    144          {
+    145              HWREG16(SYS_BASE + OFS_SYSJMBO0 + outboxSelect) = outgoingMessage;
+    146          }
+    147          
+    148          void SysCtl_setJTAGOutgoingMessage32Bit(uint32_t outgoingMessage)
+    149          {
+    150              HWREG16(SYS_BASE + OFS_SYSJMBO0) = (outgoingMessage);
+    151              HWREG16(SYS_BASE + OFS_SYSJMBO1) = (outgoingMessage >> 16);
+    152          }
+    153          
+    154          void SysCtl_protectFRAMWrite(uint8_t writeProtect){
+    155              uint8_t state = HWREG8(SYS_BASE + OFS_SYSCFG0_L);
+    156          
+    157          #ifdef __MSP430_HAS_FRWPPW__
+    158              HWREG16(SYS_BASE + OFS_SYSCFG0) = FWPW | state | writeProtect;
+    159          #else
+    160              HWREG8(SYS_BASE + OFS_SYSCFG0_L) |= writeProtect;
+    161          #endif
+    162          }
+    163          
+    164          void SysCtl_enableFRAMWrite(uint8_t writeEnable){
+    165              uint8_t state = HWREG8(SYS_BASE + OFS_SYSCFG0_L);
+    166          
+    167          #ifdef __MSP430_HAS_FRWPPW__
+    168              HWREG16(SYS_BASE + OFS_SYSCFG0) = FWPW | (state & ~writeEnable);
+    169          #else
+    170              HWREG8(SYS_BASE + OFS_SYSCFG0_L) &= ~writeEnable;
+    171          #endif
+    172          }
+    173          
+    174          void SysCtl_setInfraredConfig(uint8_t dataSource,
+    175                                        uint8_t mode,
+    176                                        uint8_t polarity)
+    177          {
+    178              HWREG16(SYS_BASE + OFS_SYSCFG1) &= ~(IRDSSEL | IRMSEL | IRPSEL);
+    179          
+    180              HWREG16(SYS_BASE + OFS_SYSCFG1) |= dataSource | mode | polarity;
+    181          }
+    182          
+    183          void SysCtl_enableInfrared(void)
+    184          {
+    185              HWREG16(SYS_BASE + OFS_SYSCFG1) |= IREN;
+    186          }
+    187          
+    188          void SysCtl_disableInfrared(void)
+    189          {
+    190              HWREG16(SYS_BASE + OFS_SYSCFG1) &= ~IREN;
+    191          }
+    192          
+    193          uint8_t SysCtl_getInfraredData(void)
+    194          {
+    195              return ((HWREG16(SYS_BASE + OFS_SYSCFG1) & 0x10) >> 4);
+    196          }
+    197          
+    198          #endif
+    199          //*****************************************************************************
+    200          //
+    201          //! Close the doxygen group for sysctl_api
+    202          //! @}
+    203          //
+    204          //*****************************************************************************
+
+   Maximum stack usage in bytes:
+
+   CSTACK Function
+   ------ --------
+      4   SysCtl_clearJTAGMailboxFlagStatus
+      4   SysCtl_disableBSLMemory
+      4   SysCtl_disableBSLProtect
+      4   SysCtl_disableInfrared
+      4   SysCtl_disableRAMBasedInterruptVectors
+      4   SysCtl_enableBSLMemory
+      4   SysCtl_enableBSLProtect
+      4   SysCtl_enableDedicatedJTAGPins
+      4   SysCtl_enableFRAMWrite
+      4   SysCtl_enableInfrared
+      4   SysCtl_enablePMMAccessProtect
+      4   SysCtl_enableRAMBasedInterruptVectors
+      4   SysCtl_getBSLEntryIndication
+      4   SysCtl_getInfraredData
+      4   SysCtl_getJTAGInboxMessage16Bit
+      4   SysCtl_getJTAGInboxMessage32Bit
+      4   SysCtl_getJTAGMailboxFlagStatus
+      4   SysCtl_initJTAGMailbox
+      4   SysCtl_protectFRAMWrite
+      4   SysCtl_setInfraredConfig
+      4   SysCtl_setJTAGOutgoingMessage16Bit
+      4   SysCtl_setJTAGOutgoingMessage32Bit
+      4   SysCtl_setRAMAssignedToBSL
+
+
+   Segment part sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       6  SysCtl_clearJTAGMailboxFlagStatus
+       8  SysCtl_disableBSLMemory
+       8  SysCtl_disableBSLProtect
+       6  SysCtl_disableInfrared
+       6  SysCtl_disableRAMBasedInterruptVectors
+       8  SysCtl_enableBSLMemory
+       8  SysCtl_enableBSLProtect
+       8  SysCtl_enableDedicatedJTAGPins
+      10  SysCtl_enableFRAMWrite
+       6  SysCtl_enableInfrared
+       6  SysCtl_enablePMMAccessProtect
+       6  SysCtl_enableRAMBasedInterruptVectors
+      16  SysCtl_getBSLEntryIndication
+      12  SysCtl_getInfraredData
+      10  SysCtl_getJTAGInboxMessage16Bit
+      22  SysCtl_getJTAGInboxMessage32Bit
+       6  SysCtl_getJTAGMailboxFlagStatus
+      14  SysCtl_initJTAGMailbox
+      10  SysCtl_protectFRAMWrite
+      18  SysCtl_setInfraredConfig
+      12  SysCtl_setJTAGOutgoingMessage16Bit
+      10  SysCtl_setJTAGOutgoingMessage32Bit
+      10  SysCtl_setRAMAssignedToBSL
+
+ 
+ 226 bytes in segment CODE
+ 
+ 226 bytes of CODE memory
+
+Errors: none
+Warnings: none

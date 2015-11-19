@@ -1,0 +1,635 @@
+###############################################################################
+#
+# IAR C/C++ Compiler V6.30.2.940/W32 for MSP430           19/Nov/2015  14:22:16
+# Copyright 1996-2015 IAR Systems AB.
+# Standalone license - IAR Embedded Workbench for Texas Instruments MSP430
+#
+#    __rt_version  =  3
+#    __double_size =  32
+#    __reg_r4      =  free
+#    __reg_r5      =  free
+#    __pic         =  no
+#    __core        =  430X
+#    __data_model  =  small
+#    __code_model  =  large
+#    Source file   =  I:\IAR\EE312\driverlib\MSP430FR2xx_4xx\gpio.c
+#    Command line  =  
+#        I:\IAR\EE312\driverlib\MSP430FR2xx_4xx\gpio.c -lcN
+#        I:\IAR\EE312\Lab_3\Debug\List\ -o I:\IAR\EE312\Lab_3\Debug\Obj\
+#        --no_cse --no_unroll --no_inline --no_code_motion --no_tbaa --debug
+#        -D__MSP430FR4133__ -e --double=32 --dlib_config
+#        E:\IAR-new\430\lib\dlib\dl430xlsfn.h -I I:\IAR\EE312\Lab_3\..\ -I
+#        I:\IAR\EE312\Lab_3\..\driverlib\MSP430FR2xx_4xx\ --core=430X
+#        --data_model=small -Ol --hw_workaround=CPU40 --segment __data16=DATA16
+#        --segment __data20=DATA20 --code_model=large
+#    List file     =  I:\IAR\EE312\Lab_3\Debug\List\gpio.lst
+#    Object file   =  I:\IAR\EE312\Lab_3\Debug\Obj\gpio.r43
+#
+###############################################################################
+
+I:\IAR\EE312\driverlib\MSP430FR2xx_4xx\gpio.c
+      1          /* --COPYRIGHT--,BSD
+      2           * Copyright (c) 2014, Texas Instruments Incorporated
+      3           * All rights reserved.
+      4           *
+      5           * Redistribution and use in source and binary forms, with or without
+      6           * modification, are permitted provided that the following conditions
+      7           * are met:
+      8           *
+      9           * *  Redistributions of source code must retain the above copyright
+     10           *    notice, this list of conditions and the following disclaimer.
+     11           *
+     12           * *  Redistributions in binary form must reproduce the above copyright
+     13           *    notice, this list of conditions and the following disclaimer in the
+     14           *    documentation and/or other materials provided with the distribution.
+     15           *
+     16           * *  Neither the name of Texas Instruments Incorporated nor the names of
+     17           *    its contributors may be used to endorse or promote products derived
+     18           *    from this software without specific prior written permission.
+     19           *
+     20           * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+     21           * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+     22           * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+     23           * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+     24           * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+     25           * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+     26           * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+     27           * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+     28           * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+     29           * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+     30           * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+     31           * --/COPYRIGHT--*/
+     32          //*****************************************************************************
+     33          //
+     34          // gpio.c - Driver for the gpio Module.
+     35          //
+     36          //*****************************************************************************
+     37          
+     38          //*****************************************************************************
+     39          //
+     40          //! \addtogroup gpio_api gpio
+     41          //! @{
+     42          //
+     43          //*****************************************************************************
+     44          
+     45          #include "inc/hw_regaccess.h"
+     46          #include "inc/hw_memmap.h"
+     47          
+     48          #if defined(__MSP430_HAS_PORT1_R__) || defined(__MSP430_HAS_PORT2_R__) || \
+     49              defined(__MSP430_HAS_PORTA_R__)
+     50          #include "gpio.h"
+     51          
+     52          #include <assert.h>
+     53          
+     54          static const uint16_t GPIO_PORT_TO_BASE[] = {
+     55              0x00,
+     56          #if defined(__MSP430_HAS_PORT1_R__)
+     57              __MSP430_BASEADDRESS_PORT1_R__,
+     58          #elif defined(__MSP430_HAS_PORT1__)
+     59              __MSP430_BASEADDRESS_PORT1__,
+     60          #else
+     61              0xFFFF,
+     62          #endif
+     63          #if defined(__MSP430_HAS_PORT2_R__)
+     64              __MSP430_BASEADDRESS_PORT2_R__,
+     65          #elif defined(__MSP430_HAS_PORT2__)
+     66              __MSP430_BASEADDRESS_PORT2__,
+     67          #else
+     68              0xFFFF,
+     69          #endif
+     70          #if defined(__MSP430_HAS_PORT3_R__)
+     71              __MSP430_BASEADDRESS_PORT3_R__,
+     72          #elif defined(__MSP430_HAS_PORT3__)
+     73              __MSP430_BASEADDRESS_PORT3__,
+     74          #else
+     75              0xFFFF,
+     76          #endif
+     77          #if defined(__MSP430_HAS_PORT4_R__)
+     78              __MSP430_BASEADDRESS_PORT4_R__,
+     79          #elif defined(__MSP430_HAS_PORT4__)
+     80              __MSP430_BASEADDRESS_PORT4__,
+     81          #else
+     82              0xFFFF,
+     83          #endif
+     84          #if defined(__MSP430_HAS_PORT5_R__)
+     85              __MSP430_BASEADDRESS_PORT5_R__,
+     86          #elif defined(__MSP430_HAS_PORT5__)
+     87              __MSP430_BASEADDRESS_PORT5__,
+     88          #else
+     89              0xFFFF,
+     90          #endif
+     91          #if defined(__MSP430_HAS_PORT6_R__)
+     92              __MSP430_BASEADDRESS_PORT6_R__,
+     93          #elif defined(__MSP430_HAS_PORT6__)
+     94              __MSP430_BASEADDRESS_PORT6__,
+     95          #else
+     96              0xFFFF,
+     97          #endif
+     98          #if defined(__MSP430_HAS_PORT7_R__)
+     99              __MSP430_BASEADDRESS_PORT7_R__,
+    100          #elif defined(__MSP430_HAS_PORT7__)
+    101              __MSP430_BASEADDRESS_PORT7__,
+    102          #else
+    103              0xFFFF,
+    104          #endif
+    105          #if defined(__MSP430_HAS_PORT8_R__)
+    106              __MSP430_BASEADDRESS_PORT8_R__,
+    107          #elif defined(__MSP430_HAS_PORT8__)
+    108              __MSP430_BASEADDRESS_PORT8__,
+    109          #else
+    110              0xFFFF,
+    111          #endif
+    112          #if defined(__MSP430_HAS_PORT9_R__)
+    113              __MSP430_BASEADDRESS_PORT9_R__,
+    114          #elif defined(__MSP430_HAS_PORT9__)
+    115              __MSP430_BASEADDRESS_PORT9__,
+    116          #else
+    117              0xFFFF,
+    118          #endif
+    119          #if defined(__MSP430_HAS_PORT10_R__)
+    120              __MSP430_BASEADDRESS_PORT10_R__,
+    121          #elif defined(__MSP430_HAS_PORT10__)
+    122              __MSP430_BASEADDRESS_PORT10__,
+    123          #else
+    124              0xFFFF,
+    125          #endif
+    126          #if defined(__MSP430_HAS_PORT11_R__)
+    127              __MSP430_BASEADDRESS_PORT11_R__,
+    128          #elif defined(__MSP430_HAS_PORT11__)
+    129              __MSP430_BASEADDRESS_PORT11__,
+    130          #else
+    131              0xFFFF,
+    132          #endif
+    133              0xFFFF,
+    134          #if defined(__MSP430_HAS_PORTJ_R__)
+    135              __MSP430_BASEADDRESS_PORTJ_R__
+    136          #elif defined(__MSP430_HAS_PORTJ__)
+    137              __MSP430_BASEADDRESS_PORTJ__
+    138          #else
+    139              0xFFFF
+    140          #endif
+    141          };
+    142          
+    143          void GPIO_setAsOutputPin(uint8_t selectedPort,
+    144                                   uint16_t selectedPins) {
+    145              uint16_t baseAddress = GPIO_PORT_TO_BASE[selectedPort];
+    146          
+    147              #ifndef NDEBUG
+    148              if(baseAddress == 0xFFFF)
+    149              {
+    150                  return;
+    151              }
+    152              #endif
+    153          
+    154              // Shift by 8 if port is even (upper 8-bits)
+    155              if((selectedPort & 1) ^ 1)
+    156              {
+    157                  selectedPins <<= 8;
+    158              }
+    159          
+    160          #ifdef __MSP430_HAS_PASEL0__
+    161              HWREG16(baseAddress + OFS_PASEL0) &= ~selectedPins;
+    162          #endif
+    163          #ifdef __MSP430_HAS_PASEL1__
+    164              HWREG16(baseAddress + OFS_PASEL1) &= ~selectedPins;
+    165          #endif
+    166              HWREG16(baseAddress + OFS_PADIR) |= selectedPins;
+    167          
+    168              return;
+    169          }
+    170          
+    171          void GPIO_setAsInputPin(uint8_t selectedPort,
+    172                                  uint16_t selectedPins) {
+    173              uint16_t baseAddress = GPIO_PORT_TO_BASE[selectedPort];
+    174          
+    175              #ifndef NDEBUG
+    176              if(baseAddress == 0xFFFF)
+    177              {
+    178                  return;
+    179              }
+    180              #endif
+    181          
+    182              // Shift by 8 if port is even (upper 8-bits)
+    183              if((selectedPort & 1) ^ 1)
+    184              {
+    185                  selectedPins <<= 8;
+    186              }
+    187          
+    188          #ifdef __MSP430_HAS_PASEL0__
+    189              HWREG16(baseAddress + OFS_PASEL0) &= ~selectedPins;
+    190          #endif
+    191          #ifdef __MSP430_HAS_PASEL1__
+    192              HWREG16(baseAddress + OFS_PASEL1) &= ~selectedPins;
+    193          #endif
+    194              HWREG16(baseAddress + OFS_PADIR) &= ~selectedPins;
+    195              HWREG16(baseAddress + OFS_PAREN) &= ~selectedPins;
+    196          }
+    197          
+    198          void GPIO_setAsPeripheralModuleFunctionOutputPin(uint8_t selectedPort,
+    199                                                           uint16_t selectedPins
+    200                                                           ,
+    201                                                           uint8_t mode) {
+    202              uint16_t baseAddress = GPIO_PORT_TO_BASE[selectedPort];
+    203          
+    204              #ifndef NDEBUG
+    205              if(baseAddress == 0xFFFF)
+    206              {
+    207                  return;
+    208              }
+    209              #endif
+    210          
+    211              // Shift by 8 if port is even (upper 8-bits)
+    212              if((selectedPort & 1) ^ 1)
+    213              {
+    214                  selectedPins <<= 8;
+    215              }
+    216          
+    217              HWREG16(baseAddress + OFS_PADIR) |= selectedPins;
+    218              switch(mode)
+    219              {
+    220              case GPIO_PRIMARY_MODULE_FUNCTION:
+    221          #ifdef __MSP430_HAS_PASEL0__
+    222                  HWREG16(baseAddress + OFS_PASEL0) |= selectedPins;
+    223          #endif
+    224          #ifdef __MSP430_HAS_PASEL1__
+    225                  HWREG16(baseAddress + OFS_PASEL1) &= ~selectedPins;
+    226          #endif
+    227                  break;
+    228              case GPIO_SECONDARY_MODULE_FUNCTION:
+    229          #ifdef __MSP430_HAS_PASEL0__
+    230                  HWREG16(baseAddress + OFS_PASEL0) &= ~selectedPins;
+    231          #endif
+    232          #ifdef __MSP430_HAS_PASEL1__
+    233                  HWREG16(baseAddress + OFS_PASEL1) |= selectedPins;
+    234          #endif
+    235                  break;
+    236              case GPIO_TERNARY_MODULE_FUNCTION:
+    237          #ifdef __MSP430_HAS_PASEL0__
+    238                  HWREG16(baseAddress + OFS_PASEL0) |= selectedPins;
+    239          #endif
+    240          #ifdef __MSP430_HAS_PASEL1__
+    241                  HWREG16(baseAddress + OFS_PASEL1) |= selectedPins;
+    242          #endif
+    243                  break;
+    244              }
+    245          }
+    246          
+    247          void GPIO_setAsPeripheralModuleFunctionInputPin(uint8_t selectedPort,
+    248                                                          uint16_t selectedPins
+    249                                                          ,
+    250                                                          uint8_t mode) {
+    251              uint16_t baseAddress = GPIO_PORT_TO_BASE[selectedPort];
+    252          
+    253              #ifndef NDEBUG
+    254              if(baseAddress == 0xFFFF)
+    255              {
+    256                  return;
+    257              }
+    258              #endif
+    259          
+    260              // Shift by 8 if port is even (upper 8-bits)
+    261              if((selectedPort & 1) ^ 1)
+    262              {
+    263                  selectedPins <<= 8;
+    264              }
+    265          
+    266              HWREG16(baseAddress + OFS_PADIR) &= ~selectedPins;
+    267              switch(mode)
+    268              {
+    269              case GPIO_PRIMARY_MODULE_FUNCTION:
+    270          #ifdef __MSP430_HAS_PASEL0__
+    271                  HWREG16(baseAddress + OFS_PASEL0) |= selectedPins;
+    272          #endif
+    273          #ifdef __MSP430_HAS_PASEL1__
+    274                  HWREG16(baseAddress + OFS_PASEL1) &= ~selectedPins;
+    275          #endif
+    276                  break;
+    277              case GPIO_SECONDARY_MODULE_FUNCTION:
+    278          #ifdef __MSP430_HAS_PASEL0__
+    279                  HWREG16(baseAddress + OFS_PASEL0) &= ~selectedPins;
+    280          #endif
+    281          #ifdef __MSP430_HAS_PASEL1__
+    282                  HWREG16(baseAddress + OFS_PASEL1) |= selectedPins;
+    283          #endif
+    284                  break;
+    285              case GPIO_TERNARY_MODULE_FUNCTION:
+    286          #ifdef __MSP430_HAS_PASEL0__
+    287                  HWREG16(baseAddress + OFS_PASEL0) |= selectedPins;
+    288          #endif
+    289          #ifdef __MSP430_HAS_PASEL1__
+    290                  HWREG16(baseAddress + OFS_PASEL1) |= selectedPins;
+    291          #endif
+    292                  break;
+    293              }
+    294          }
+    295          
+    296          void GPIO_setOutputHighOnPin(uint8_t selectedPort,
+    297                                       uint16_t selectedPins) {
+    298              uint16_t baseAddress = GPIO_PORT_TO_BASE[selectedPort];
+    299          
+    300              #ifndef NDEBUG
+    301              if(baseAddress == 0xFFFF)
+    302              {
+    303                  return;
+    304              }
+    305              #endif
+    306          
+    307              // Shift by 8 if port is even (upper 8-bits)
+    308              if((selectedPort & 1) ^ 1)
+    309              {
+    310                  selectedPins <<= 8;
+    311              }
+    312          
+    313              HWREG16(baseAddress + OFS_PAOUT) |= selectedPins;
+    314          }
+    315          
+    316          void GPIO_setOutputLowOnPin(uint8_t selectedPort,
+    317                                      uint16_t selectedPins) {
+    318              uint16_t baseAddress = GPIO_PORT_TO_BASE[selectedPort];
+    319          
+    320              #ifndef NDEBUG
+    321              if(baseAddress == 0xFFFF)
+    322              {
+    323                  return;
+    324              }
+    325              #endif
+    326          
+    327              // Shift by 8 if port is even (upper 8-bits)
+    328              if((selectedPort & 1) ^ 1)
+    329              {
+    330                  selectedPins <<= 8;
+    331              }
+    332          
+    333              HWREG16(baseAddress + OFS_PAOUT) &= ~selectedPins;
+    334          }
+    335          
+    336          void GPIO_toggleOutputOnPin(uint8_t selectedPort,
+    337                                      uint16_t selectedPins) {
+    338              uint16_t baseAddress = GPIO_PORT_TO_BASE[selectedPort];
+    339          
+    340              #ifndef NDEBUG
+    341              if(baseAddress == 0xFFFF)
+    342              {
+    343                  return;
+    344              }
+    345              #endif
+    346          
+    347              // Shift by 8 if port is even (upper 8-bits)
+    348              if((selectedPort & 1) ^ 1)
+    349              {
+    350                  selectedPins <<= 8;
+    351              }
+    352          
+    353              HWREG16(baseAddress + OFS_PAOUT) ^= selectedPins;
+    354          }
+    355          
+    356          void GPIO_setAsInputPinWithPullDownResistor(uint8_t selectedPort,
+    357                                                      uint16_t selectedPins) {
+    358              uint16_t baseAddress = GPIO_PORT_TO_BASE[selectedPort];
+    359          
+    360              #ifndef NDEBUG
+    361              if(baseAddress == 0xFFFF)
+    362              {
+    363                  return;
+    364              }
+    365              #endif
+    366          
+    367              // Shift by 8 if port is even (upper 8-bits)
+    368              if((selectedPort & 1) ^ 1)
+    369              {
+    370                  selectedPins <<= 8;
+    371              }
+    372          
+    373          #ifdef __MSP430_HAS_PASEL0__
+    374              HWREG16(baseAddress + OFS_PASEL0) &= ~selectedPins;
+    375          #endif
+    376          #ifdef __MSP430_HAS_PASEL1__
+    377              HWREG16(baseAddress + OFS_PASEL1) &= ~selectedPins;
+    378          #endif
+    379          
+    380              HWREG16(baseAddress + OFS_PADIR) &= ~selectedPins;
+    381              HWREG16(baseAddress + OFS_PAREN) |= selectedPins;
+    382              HWREG16(baseAddress + OFS_PAOUT) &= ~selectedPins;
+    383          }
+    384          
+    385          void GPIO_setAsInputPinWithPullUpResistor(uint8_t selectedPort,
+    386                                                    uint16_t selectedPins) {
+    387              uint16_t baseAddress = GPIO_PORT_TO_BASE[selectedPort];
+    388          
+    389              #ifndef NDEBUG
+    390              if(baseAddress == 0xFFFF)
+    391              {
+    392                  return;
+    393              }
+    394              #endif
+    395          
+    396              // Shift by 8 if port is even (upper 8-bits)
+    397              if((selectedPort & 1) ^ 1)
+    398              {
+    399                  selectedPins <<= 8;
+    400              }
+    401          
+    402          #ifdef __MSP430_HAS_PASEL0__
+    403              HWREG16(baseAddress + OFS_PASEL0) &= ~selectedPins;
+    404          #endif
+    405          #ifdef __MSP430_HAS_PASEL1__
+    406              HWREG16(baseAddress + OFS_PASEL1) &= ~selectedPins;
+    407          #endif
+    408              HWREG16(baseAddress + OFS_PADIR) &= ~selectedPins;
+    409              HWREG16(baseAddress + OFS_PAREN) |= selectedPins;
+    410              HWREG16(baseAddress + OFS_PAOUT) |= selectedPins;
+    411          }
+    412          
+    413          uint8_t GPIO_getInputPinValue(uint8_t selectedPort,
+    414                                        uint16_t selectedPins) {
+    415              uint16_t baseAddress = GPIO_PORT_TO_BASE[selectedPort];
+    416          
+    417              #ifndef NDEBUG
+    418              if(baseAddress == 0xFFFF)
+    419              {
+    420                  return;
+    421              }
+    422              #endif
+    423          
+    424              // Shift by 8 if port is even (upper 8-bits)
+    425              if((selectedPort & 1) ^ 1)
+    426              {
+    427                  selectedPins <<= 8;
+    428              }
+    429          
+    430              uint16_t inputPinValue = HWREG16(baseAddress + OFS_PAIN) & (selectedPins);
+    431          
+    432              if(inputPinValue > 0)
+    433              {
+    434                  return (GPIO_INPUT_PIN_HIGH);
+    435              }
+    436              return (GPIO_INPUT_PIN_LOW);
+    437          }
+    438          
+    439          void GPIO_enableInterrupt(uint8_t selectedPort,
+    440                                    uint16_t selectedPins) {
+    441              uint16_t baseAddress = GPIO_PORT_TO_BASE[selectedPort];
+    442          
+    443              #ifndef NDEBUG
+    444              if(baseAddress == 0xFFFF)
+    445              {
+    446                  return;
+    447              }
+    448              #endif
+    449          
+    450              // Shift by 8 if port is even (upper 8-bits)
+    451              if((selectedPort & 1) ^ 1)
+    452              {
+    453                  selectedPins <<= 8;
+    454              }
+    455          
+    456              HWREG16(baseAddress + OFS_PAIE) |= selectedPins;
+    457          }
+    458          
+    459          void GPIO_disableInterrupt(uint8_t selectedPort,
+    460                                     uint16_t selectedPins) {
+    461              uint16_t baseAddress = GPIO_PORT_TO_BASE[selectedPort];
+    462          
+    463              #ifndef NDEBUG
+    464              if(baseAddress == 0xFFFF)
+    465              {
+    466                  return;
+    467              }
+    468              #endif
+    469          
+    470              // Shift by 8 if port is even (upper 8-bits)
+    471              if((selectedPort & 1) ^ 1)
+    472              {
+    473                  selectedPins <<= 8;
+    474              }
+    475          
+    476              HWREG16(baseAddress + OFS_PAIE) &= ~selectedPins;
+    477          }
+    478          
+    479          uint16_t GPIO_getInterruptStatus(uint8_t selectedPort,
+    480                                           uint16_t selectedPins) {
+    481              uint16_t baseAddress = GPIO_PORT_TO_BASE[selectedPort];
+    482          
+    483              #ifndef NDEBUG
+    484              if(baseAddress == 0xFFFF)
+    485              {
+    486                  return;
+    487              }
+    488              #endif
+    489          
+    490              // Shift by 8 if port is even (upper 8-bits)
+    491              if((selectedPort & 1) ^ 1)
+    492              {
+    493                  selectedPins <<= 8;
+    494              }
+    495          
+    496              return (HWREG16(baseAddress + OFS_PAIFG) & selectedPins);
+    497          }
+    498          
+    499          void GPIO_clearInterrupt(uint8_t selectedPort,
+    500                                   uint16_t selectedPins) {
+    501              uint16_t baseAddress = GPIO_PORT_TO_BASE[selectedPort];
+    502          
+    503              #ifndef NDEBUG
+    504              if(baseAddress == 0xFFFF)
+    505              {
+    506                  return;
+    507              }
+    508              #endif
+    509          
+    510              // Shift by 8 if port is even (upper 8-bits)
+    511              if((selectedPort & 1) ^ 1)
+    512              {
+    513                  selectedPins <<= 8;
+    514              }
+    515          
+    516              HWREG16(baseAddress + OFS_PAIFG) &= ~selectedPins;
+    517          }
+    518          
+    519          void GPIO_selectInterruptEdge(uint8_t selectedPort,
+    520                                        uint16_t selectedPins,
+    521                                        uint8_t edgeSelect) {
+    522              uint16_t baseAddress = GPIO_PORT_TO_BASE[selectedPort];
+    523          
+    524              #ifndef NDEBUG
+    525              if(baseAddress == 0xFFFF)
+    526              {
+    527                  return;
+    528              }
+    529              #endif
+    530          
+    531              // Shift by 8 if port is even (upper 8-bits)
+    532              if((selectedPort & 1) ^ 1)
+    533              {
+    534                  selectedPins <<= 8;
+    535              }
+    536          
+    537              if(GPIO_LOW_TO_HIGH_TRANSITION == edgeSelect)
+    538              {
+    539                  HWREG16(baseAddress + OFS_PAIES) &= ~selectedPins;
+    540              }
+    541              else
+    542              {
+    543                  HWREG16(baseAddress + OFS_PAIES) |= selectedPins;
+    544              }
+    545          }
+    546          
+    547          #endif
+    548          //*****************************************************************************
+    549          //
+    550          //! Close the doxygen group for gpio_api
+    551          //! @}
+    552          //
+    553          //*****************************************************************************
+
+   Maximum stack usage in bytes:
+
+   CSTACK Function
+   ------ --------
+      4   GPIO_clearInterrupt
+      4   GPIO_disableInterrupt
+      4   GPIO_enableInterrupt
+      4   GPIO_getInputPinValue
+      4   GPIO_getInterruptStatus
+      6   GPIO_selectInterruptEdge
+      4   GPIO_setAsInputPin
+      4   GPIO_setAsInputPinWithPullDownResistor
+      4   GPIO_setAsInputPinWithPullUpResistor
+      4   GPIO_setAsOutputPin
+      6   GPIO_setAsPeripheralModuleFunctionInputPin
+      6   GPIO_setAsPeripheralModuleFunctionOutputPin
+      4   GPIO_setOutputHighOnPin
+      4   GPIO_setOutputLowOnPin
+      4   GPIO_toggleOutputOnPin
+
+
+   Segment part sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+      28  GPIO_PORT_TO_BASE
+      34  GPIO_clearInterrupt
+      34  GPIO_disableInterrupt
+      34  GPIO_enableInterrupt
+      38  GPIO_getInputPinValue
+      34  GPIO_getInterruptStatus
+      52  GPIO_selectInterruptEdge
+      52  GPIO_setAsInputPin
+      60  GPIO_setAsInputPinWithPullDownResistor
+      60  GPIO_setAsInputPinWithPullUpResistor
+      42  GPIO_setAsOutputPin
+      80  GPIO_setAsPeripheralModuleFunctionInputPin
+      80  GPIO_setAsPeripheralModuleFunctionOutputPin
+      32  GPIO_setOutputHighOnPin
+      32  GPIO_setOutputLowOnPin
+      32  GPIO_toggleOutputOnPin
+
+ 
+ 696 bytes in segment CODE
+  28 bytes in segment DATA16_C
+ 
+ 696 bytes of CODE  memory
+  28 bytes of CONST memory
+
+Errors: none
+Warnings: none

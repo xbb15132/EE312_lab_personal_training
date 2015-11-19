@@ -1,0 +1,304 @@
+###############################################################################
+#
+# IAR C/C++ Compiler V6.30.2.940/W32 for MSP430           19/Nov/2015  14:22:16
+# Copyright 1996-2015 IAR Systems AB.
+# Standalone license - IAR Embedded Workbench for Texas Instruments MSP430
+#
+#    __rt_version  =  3
+#    __double_size =  32
+#    __reg_r4      =  free
+#    __reg_r5      =  free
+#    __pic         =  no
+#    __core        =  430X
+#    __data_model  =  small
+#    __code_model  =  large
+#    Source file   =  I:\IAR\EE312\driverlib\MSP430FR2xx_4xx\pmm.c
+#    Command line  =  
+#        I:\IAR\EE312\driverlib\MSP430FR2xx_4xx\pmm.c -lcN
+#        I:\IAR\EE312\Lab_3\Debug\List\ -o I:\IAR\EE312\Lab_3\Debug\Obj\
+#        --no_cse --no_unroll --no_inline --no_code_motion --no_tbaa --debug
+#        -D__MSP430FR4133__ -e --double=32 --dlib_config
+#        E:\IAR-new\430\lib\dlib\dl430xlsfn.h -I I:\IAR\EE312\Lab_3\..\ -I
+#        I:\IAR\EE312\Lab_3\..\driverlib\MSP430FR2xx_4xx\ --core=430X
+#        --data_model=small -Ol --hw_workaround=CPU40 --segment __data16=DATA16
+#        --segment __data20=DATA20 --code_model=large
+#    List file     =  I:\IAR\EE312\Lab_3\Debug\List\pmm.lst
+#    Object file   =  I:\IAR\EE312\Lab_3\Debug\Obj\pmm.r43
+#
+###############################################################################
+
+I:\IAR\EE312\driverlib\MSP430FR2xx_4xx\pmm.c
+      1          /* --COPYRIGHT--,BSD
+      2           * Copyright (c) 2014, Texas Instruments Incorporated
+      3           * All rights reserved.
+      4           *
+      5           * Redistribution and use in source and binary forms, with or without
+      6           * modification, are permitted provided that the following conditions
+      7           * are met:
+      8           *
+      9           * *  Redistributions of source code must retain the above copyright
+     10           *    notice, this list of conditions and the following disclaimer.
+     11           *
+     12           * *  Redistributions in binary form must reproduce the above copyright
+     13           *    notice, this list of conditions and the following disclaimer in the
+     14           *    documentation and/or other materials provided with the distribution.
+     15           *
+     16           * *  Neither the name of Texas Instruments Incorporated nor the names of
+     17           *    its contributors may be used to endorse or promote products derived
+     18           *    from this software without specific prior written permission.
+     19           *
+     20           * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+     21           * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+     22           * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+     23           * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+     24           * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+     25           * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+     26           * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+     27           * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+     28           * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+     29           * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+     30           * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+     31           * --/COPYRIGHT--*/
+     32          //*****************************************************************************
+     33          //
+     34          // pmm.c - Driver for the pmm Module.
+     35          //
+     36          //*****************************************************************************
+     37          
+     38          //*****************************************************************************
+     39          //
+     40          //! \addtogroup pmm_api pmm
+     41          //! @{
+     42          //
+     43          //*****************************************************************************
+     44          
+     45          #include "inc/hw_regaccess.h"
+     46          #include "inc/hw_memmap.h"
+     47          
+     48          #ifdef __MSP430_HAS_PMM_FRAM__
+     49          #include "pmm.h"
+     50          
+     51          #include <assert.h>
+     52          
+     53          void PMM_enableLowPowerReset(void)
+     54          {
+     55              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = PMMPW_H;
+     56              HWREG8(PMM_BASE + OFS_PMMCTL0) |= PMMLPRST;
+     57              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = 0x00;
+     58          }
+     59          
+     60          void PMM_disableLowPowerReset(void)
+     61          {
+     62              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = PMMPW_H;
+     63              HWREG8(PMM_BASE + OFS_PMMCTL0) &= ~PMMLPRST;
+     64              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = 0x00;
+     65          }
+     66          
+     67          void PMM_enableSVSH(void)
+     68          {
+     69              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = PMMPW_H;
+     70              HWREG8(PMM_BASE + OFS_PMMCTL0_L) |= SVSHE;
+     71              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = 0x00;
+     72          }
+     73          
+     74          void PMM_disableSVSH(void)
+     75          {
+     76              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = PMMPW_H;
+     77              HWREG8(PMM_BASE + OFS_PMMCTL0_L) &= ~SVSHE;
+     78              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = 0x00;
+     79          }
+     80          
+     81          void PMM_turnOnRegulator(void)
+     82          {
+     83              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = PMMPW_H;
+     84              HWREG8(PMM_BASE + OFS_PMMCTL0) &= ~PMMREGOFF;
+     85              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = 0x00;
+     86          }
+     87          
+     88          void PMM_turnOffRegulator(void)
+     89          {
+     90              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = PMMPW_H;
+     91              HWREG8(PMM_BASE + OFS_PMMCTL0) |= PMMREGOFF;
+     92              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = 0x00;
+     93          }
+     94          
+     95          void PMM_trigPOR(void)
+     96          {
+     97              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = PMMPW_H;
+     98              HWREG8(PMM_BASE + OFS_PMMCTL0) |= PMMSWPOR;
+     99              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = 0x00;
+    100          }
+    101          
+    102          void PMM_trigBOR(void)
+    103          {
+    104              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = PMMPW_H;
+    105              HWREG8(PMM_BASE + OFS_PMMCTL0) |= PMMSWBOR;
+    106              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = 0x00;
+    107          }
+    108          
+    109          void PMM_clearInterrupt(uint16_t mask)
+    110          {
+    111              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = PMMPW_H;
+    112              HWREG16(PMM_BASE + OFS_PMMIFG) &= ~mask;
+    113              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = 0x00;
+    114          }
+    115          
+    116          uint16_t PMM_getInterruptStatus(uint16_t mask)
+    117          {
+    118              return ((HWREG16(PMM_BASE + OFS_PMMIFG)) & mask);
+    119          }
+    120          
+    121          void PMM_unlockLPM5(void)
+    122          {
+    123              HWREG8(PMM_BASE + OFS_PM5CTL0) &= ~LOCKLPM5;
+    124          }
+    125          
+    126          uint16_t PMM_getBandgapMode(void)
+    127          {
+    128              return (HWREG16((PMM_BASE) + OFS_PMMCTL2) & BGMODE);
+    129          }
+    130          
+    131          uint16_t PMM_isBandgapActive(void)
+    132          {
+    133              return (HWREG16((PMM_BASE) + OFS_PMMCTL2) & REFBGACT);
+    134          }
+    135          
+    136          uint16_t PMM_isRefGenActive(void)
+    137          {
+    138              return (HWREG16((PMM_BASE) + OFS_PMMCTL2) & REFGENACT);
+    139          }
+    140          
+    141          uint16_t PMM_getBufferedBandgapVoltageStatus(void)
+    142          {
+    143              return (HWREG16((PMM_BASE) + OFS_PMMCTL2) & REFBGRDY);
+    144          }
+    145          
+    146          uint16_t PMM_getVariableReferenceVoltageStatus(void)
+    147          {
+    148              return (HWREG16((PMM_BASE) + OFS_PMMCTL2) & REFGENRDY);
+    149          }
+    150          
+    151          void PMM_disableTempSensor(void)
+    152          {
+    153              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = PMMPW_H;
+    154          
+    155              HWREG8(PMM_BASE + OFS_PMMCTL2) &= ~TSENSOREN;
+    156          
+    157              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = 0x00;
+    158          }
+    159          
+    160          void PMM_enableTempSensor(void)
+    161          {
+    162              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = PMMPW_H;
+    163          
+    164              HWREG8(PMM_BASE + OFS_PMMCTL2) |= TSENSOREN;
+    165          
+    166              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = 0x00;
+    167          }
+    168          
+    169          void PMM_disableExternalReference(void)
+    170          {
+    171              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = PMMPW_H;
+    172          
+    173              HWREG8(PMM_BASE + OFS_PMMCTL2) &= ~EXTREFEN;
+    174          
+    175              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = 0x00;
+    176          }
+    177          
+    178          void PMM_enableExternalReference(void)
+    179          {
+    180              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = PMMPW_H;
+    181          
+    182              HWREG8(PMM_BASE + OFS_PMMCTL2) |= EXTREFEN;
+    183          
+    184              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = 0x00;
+    185          }
+    186          
+    187          void PMM_disableInternalReference(void)
+    188          {
+    189              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = PMMPW_H;
+    190          
+    191              HWREG8(PMM_BASE + OFS_PMMCTL2) &= ~INTREFEN;
+    192          
+    193              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = 0x00;
+    194          }
+    195          
+    196          void PMM_enableInternalReference(void)
+    197          {
+    198              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = PMMPW_H;
+    199          
+    200              HWREG8(PMM_BASE + OFS_PMMCTL2) |= INTREFEN;
+    201          
+    202              HWREG8(PMM_BASE + OFS_PMMCTL0_H) = 0x00;
+    203          }
+    204          
+    205          #endif
+    206          //*****************************************************************************
+    207          //
+    208          //! Close the doxygen group for pmm_api
+    209          //! @}
+    210          //
+    211          //*****************************************************************************
+
+   Maximum stack usage in bytes:
+
+   CSTACK Function
+   ------ --------
+      4   PMM_clearInterrupt
+      4   PMM_disableExternalReference
+      4   PMM_disableInternalReference
+      4   PMM_disableLowPowerReset
+      4   PMM_disableSVSH
+      4   PMM_disableTempSensor
+      4   PMM_enableExternalReference
+      4   PMM_enableInternalReference
+      4   PMM_enableLowPowerReset
+      4   PMM_enableSVSH
+      4   PMM_enableTempSensor
+      4   PMM_getBandgapMode
+      4   PMM_getBufferedBandgapVoltageStatus
+      4   PMM_getInterruptStatus
+      4   PMM_getVariableReferenceVoltageStatus
+      4   PMM_isBandgapActive
+      4   PMM_isRefGenActive
+      4   PMM_trigBOR
+      4   PMM_trigPOR
+      4   PMM_turnOffRegulator
+      4   PMM_turnOnRegulator
+      4   PMM_unlockLPM5
+
+
+   Segment part sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+      16  PMM_clearInterrupt
+      16  PMM_disableExternalReference
+      16  PMM_disableInternalReference
+      18  PMM_disableLowPowerReset
+      18  PMM_disableSVSH
+      16  PMM_disableTempSensor
+      16  PMM_enableExternalReference
+      16  PMM_enableInternalReference
+      18  PMM_enableLowPowerReset
+      18  PMM_enableSVSH
+      16  PMM_enableTempSensor
+      10  PMM_getBandgapMode
+      10  PMM_getBufferedBandgapVoltageStatus
+       6  PMM_getInterruptStatus
+      10  PMM_getVariableReferenceVoltageStatus
+      10  PMM_isBandgapActive
+      10  PMM_isRefGenActive
+      16  PMM_trigBOR
+      16  PMM_trigPOR
+      18  PMM_turnOffRegulator
+      18  PMM_turnOnRegulator
+       6  PMM_unlockLPM5
+
+ 
+ 314 bytes in segment CODE
+ 
+ 314 bytes of CODE memory
+
+Errors: none
+Warnings: none
